@@ -22,7 +22,7 @@ namespace RyderX_Server.Repositories.Implementation
             catch (Exception ex)
             {
 
-                throw new Exception("Error adding reservation", ex);
+                throw new Exception($"Error adding reservation: {ex.InnerException?.Message ?? ex.Message}", ex);
             }
         }
 
@@ -109,9 +109,12 @@ namespace RyderX_Server.Repositories.Implementation
         {
             try
             {
-                return await _context.Reservations
+                 return await _context.Reservations
                     .Where(r => r.UserId == userId)
                     .Include(r => r.Car)
+                    .Include(r => r.User)
+                    .Include(r => r.PickupLocation)
+                    .Include(r => r.DropoffLocation)
                     .ToListAsync();
             }
             catch (Exception ex)

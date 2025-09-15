@@ -44,7 +44,10 @@ namespace RyderX_Server.Repositories.Implementation
         {
             try
             {
-                return await _context.Cars.Where(c => c.LocationId == locationId).ToListAsync();
+                return await _context.Cars
+                .Where(c => c.LocationId == locationId)
+                .Include(c => c.Location) 
+                .ToListAsync();
             }
             catch (Exception ex)
             {

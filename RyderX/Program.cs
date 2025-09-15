@@ -21,7 +21,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddDefaultTokenProviders();
 
 builder.Services.AddScoped<ICarRepository, CarRepository>();
-
+builder.Services.AddScoped<ILocationRepository, LocationRepository>();
+builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 
 // Configure JWT Authentication 
 builder.Services.AddAuthentication(options =>
