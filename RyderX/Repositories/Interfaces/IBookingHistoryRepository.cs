@@ -8,5 +8,7 @@ namespace RyderX_Server.Repositories.Interfaces
         Task<BookingHistory?> GetByIdAsync(int id);
         Task<IEnumerable<BookingHistory>> GetByUserIdAsync(string userId);
         Task AddAsync(BookingHistory history);
+        Task<BookingHistory> CreateFromReservationAsync(int reservationId);
+
     }
 }

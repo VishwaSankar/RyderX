@@ -15,14 +15,14 @@ namespace RyderX_Server.Repositories.Implementation
 
         public async Task AddAsync(BookingHistory history)
         {
-            try 
-            { 
-                await _context.BookingHistories.AddAsync(history); 
-                await _context.SaveChangesAsync(); 
+            try
+            {
+                await _context.BookingHistories.AddAsync(history);
+                await _context.SaveChangesAsync();
             }
-            catch (Exception ex) 
-            { 
-                throw new Exception("Error adding booking history", ex); 
+            catch (Exception ex)
+            {
+                throw new Exception("Error adding booking history", ex);
             }
         }
 
@@ -30,11 +30,12 @@ namespace RyderX_Server.Repositories.Implementation
         {
             try
             {
-                return await _context.BookingHistories.Include(b => b.User).ToListAsync();
+                return await _context.BookingHistories
+                    .Include(b => b.User)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
-
                 throw new Exception("Error fetching booking histories", ex);
             }
         }
@@ -43,11 +44,12 @@ namespace RyderX_Server.Repositories.Implementation
         {
             try
             {
-                return await _context.BookingHistories.Include(b => b.User).FirstOrDefaultAsync(b => b.Id == id);
+                return await _context.BookingHistories
+                    .Include(b => b.User)
+                    .FirstOrDefaultAsync(b => b.Id == id);
             }
             catch (Exception ex)
             {
-
                 throw new Exception($"Error fetching booking history {id}", ex);
             }
         }
@@ -56,12 +58,55 @@ namespace RyderX_Server.Repositories.Implementation
         {
             try
             {
-                return await _context.BookingHistories.Where(b => b.UserId == userId).ToListAsync();
+                return await _context.BookingHistories
+                    .Include(b => b.User)
+                    .Where(b => b.UserId == userId)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
-
                 throw new Exception($"Error fetching booking histories for user {userId}", ex);
+            }
+        }
+
+        // ✅ Create booking history based on reservation (used by controller or reservation repo)
+        public async Task<BookingHistory> CreateFromReservationAsync(int reservationId)
+        {
+            try
+            {
+                var reservation = await _context.Reservations
+                    .Include(r => r.Car)
+                    .Include(r => r.PickupLocation)
+                    .Include(r => r.DropoffLocation)
+                    .FirstOrDefaultAsync(r => r.Id == reservationId);
+
+                if (reservation == null)
+                    throw new Exception("Invalid ReservationId");
+
+                var history = new BookingHistory
+                {
+                    ReservationId = reservation.Id,
+                    UserId = reservation.UserId!,
+                    CarMake = reservation.Car?.Make ?? "Unknown",
+                    CarModel = reservation.Car?.Model ?? "Unknown",
+                    CarLicensePlate = reservation.Car?.LicensePlate ?? "N/A",
+                    PickupAt = reservation.PickupAt,
+                    DropoffAt = reservation.DropoffAt,
+                    PickupLocation = reservation.PickupLocation?.Name ?? "N/A",
+                    DropoffLocation = reservation.DropoffLocation?.Name ?? "N/A",
+                    TotalPrice = reservation.TotalPrice,
+                    Status = reservation.Status,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await _context.BookingHistories.AddAsync(history);
+                await _context.SaveChangesAsync();
+
+                return history;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error creating booking history from reservation", ex);
             }
         }
     }

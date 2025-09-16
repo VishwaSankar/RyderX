@@ -8,38 +8,10 @@ namespace RyderX_Server.Repositories.Implementation
     public class ExtraServiceRepository : IExtraServiceRepository
     {
         private readonly ApplicationDbContext _context;
+
         public ExtraServiceRepository(ApplicationDbContext context)
         {
             _context = context;
-        }
-
-        public async Task AddAsync(ExtraService service)
-        {
-            try
-            {
-                await _context.ExtraServices.AddAsync(service); 
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Error adding extra service", ex);
-            }
-        }
-
-        public async Task DeleteAsync(int id)
-        {
-            try
-            {
-                var service = await _context.ExtraServices.FindAsync(id);
-                if (service != null) 
-                { 
-                    _context.ExtraServices.Remove(service); await _context.SaveChangesAsync(); 
-                }
-            }
-            catch (Exception ex) 
-            { 
-                throw new Exception($"Error deleting extra service {id}", ex); 
-            }
         }
 
         public async Task<IEnumerable<ExtraService>> GetAllAsync()
@@ -50,7 +22,6 @@ namespace RyderX_Server.Repositories.Implementation
             }
             catch (Exception ex)
             {
-
                 throw new Exception("Error fetching extra services", ex);
             }
         }
@@ -63,21 +34,50 @@ namespace RyderX_Server.Repositories.Implementation
             }
             catch (Exception ex)
             {
-
                 throw new Exception($"Error fetching extra service {id}", ex);
+            }
+        }
+
+        public async Task AddAsync(ExtraService service)
+        {
+            try
+            {
+                await _context.ExtraServices.AddAsync(service);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error adding extra service", ex);
             }
         }
 
         public async Task UpdateAsync(ExtraService service)
         {
-            try 
-            { 
-                _context.ExtraServices.Update(service); 
-                await _context.SaveChangesAsync(); 
+            try
+            {
+                _context.ExtraServices.Update(service);
+                await _context.SaveChangesAsync();
             }
-            catch (Exception ex) 
-            { 
-                throw new Exception("Error updating extra service", ex); 
+            catch (Exception ex)
+            {
+                throw new Exception($"Error updating extra service {service.Id}", ex);
+            }
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            try
+            {
+                var service = await _context.ExtraServices.FindAsync(id);
+                if (service != null)
+                {
+                    _context.ExtraServices.Remove(service);
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error deleting extra service {id}", ex);
             }
         }
     }

@@ -23,6 +23,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 builder.Services.AddScoped<ICarRepository, CarRepository>();
 builder.Services.AddScoped<ILocationRepository, LocationRepository>();
 builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IBookingHistoryRepository, BookingHistoryRepository>();
+builder.Services.AddScoped<IExtraServiceRepository, ExtraServiceRepository>();
 
 // Configure JWT Authentication 
 builder.Services.AddAuthentication(options =>
@@ -47,7 +51,6 @@ builder.Services.AddAuthentication(options =>
 
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
 // Configure Swagger to use the JWT Authentication

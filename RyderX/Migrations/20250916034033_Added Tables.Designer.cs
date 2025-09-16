@@ -12,8 +12,8 @@ using RyderX_Server.Context;
 namespace RyderX_Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250914082956_tables added")]
-    partial class tablesadded
+    [Migration("20250916034033_Added Tables")]
+    partial class AddedTables
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

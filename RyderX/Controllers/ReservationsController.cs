@@ -30,12 +30,12 @@ namespace RyderX_Server.Controllers
                 var result = reservations.Select(r => new ReservationDto
                 {
                     Id = r.Id,
-                    CarName = r.Car.Make + " " + r.Car.Model,
-                    UserEmail = r.User.Email,
+                    CarName = r.Car != null ? r.Car.Make + " " + r.Car.Model : "Unknown Car",
+                    UserEmail = r.User?.Email ?? "Unknown",
                     PickupAt = r.PickupAt,
                     DropoffAt = r.DropoffAt,
-                    PickupLocation = r.PickupLocation.Name,
-                    DropoffLocation = r.DropoffLocation.Name,
+                    PickupLocation = r.PickupLocation?.Name ?? "N/A",
+                    DropoffLocation = r.DropoffLocation?.Name ?? "N/A",
                     TotalPrice = r.TotalPrice,
                     Status = r.Status
                 });
@@ -44,7 +44,7 @@ namespace RyderX_Server.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error fetching reservations", Details = ex.Message });
+                return StatusCode(500, new { Message = "Error fetching reservations", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
 
@@ -78,7 +78,7 @@ namespace RyderX_Server.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error fetching user reservations", Details = ex.Message });
+                return StatusCode(500, new { Message = "Error fetching user reservations", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
 
@@ -104,7 +104,7 @@ namespace RyderX_Server.Controllers
                     PickupLocationId = dto.PickupLocationId,
                     DropoffLocationId = dto.DropoffLocationId,
                     TotalPrice = dto.TotalPrice,
-                    Status = "Booked"
+                    Status = "Pending"
                 };
 
                 await _reservationRepository.AddAsync(reservation);
@@ -112,7 +112,7 @@ namespace RyderX_Server.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error creating reservation", Details = ex.Message });
+                return StatusCode(500, new { Message = "Error creating reservation", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
 
@@ -128,13 +128,13 @@ namespace RyderX_Server.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error updating reservation status", Details = ex.Message });
+                return StatusCode(500, new { Message = "Error updating reservation status", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
 
         // DELETE: api/reservations/cancel/5
         [HttpDelete("cancel/{id}")]
-        [Authorize(Roles = "User")]
+        [Authorize(Roles = "User,Admin,Agent")]
         public async Task<IActionResult> CancelReservation(int id)
         {
             try
@@ -144,7 +144,7 @@ namespace RyderX_Server.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Message = "Error cancelling reservation", Details = ex.Message });
+                return StatusCode(500, new { Message = "Error cancelling reservation", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
     }

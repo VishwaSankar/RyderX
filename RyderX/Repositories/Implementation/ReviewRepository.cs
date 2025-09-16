@@ -68,7 +68,6 @@ namespace RyderX_Server.Repositories.Implementation
             }
             catch (Exception ex)
             {
-
                 throw new Exception($"Error fetching reviews for car {carId}", ex);
             }
         }
@@ -77,13 +76,17 @@ namespace RyderX_Server.Repositories.Implementation
         {
             try
             {
-               return await _context.Reviews.Include(r => r.Car).Where(r => r.UserId == userId).ToListAsync();
+                return await _context.Reviews
+                    .Include(r => r.Car)
+                    .Include(r => r.User)
+                    .Where(r => r.UserId == userId)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
-
                 throw new Exception($"Error fetching reviews by user {userId}", ex);
             }
         }
+
     }
 }

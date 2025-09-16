@@ -35,7 +35,7 @@ namespace RyderX_Server.Models
         public decimal TotalPrice { get; set; }
 
         [Required, MaxLength(20)]
-        public string Status { get; set; } = "Booked";   // Booked / InProgress / Cancelled / Completed
+        public string Status { get; set; } = "Pending";   
 
         // Pickup and Dropoff Locations (FKs)
         [Required]

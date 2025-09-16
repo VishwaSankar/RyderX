@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace RyderX_Server.Migrations
 {
     /// <inheritdoc />
-    public partial class tablesadded : Migration
+    public partial class AddedTables : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
