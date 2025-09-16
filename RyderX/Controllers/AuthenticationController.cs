@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using RyderX_Server.Authentication;
+using RyderX_Server.DTO.UpdateDTOs;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -125,5 +127,136 @@ namespace RyderX_Server.Controllers
                     new Response { Status = "Error", Message = $"An error occurred: {ex.Message}" });
             }
         }
+
+        // ✅ Update current user profile
+        [HttpPut("profile")]
+        [Authorize(Roles = "User,Admin,Agent")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserDto dto)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new { Message = "Invalid user identity" });
+
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null) return NotFound(new { Message = "User not found" });
+
+                // Map new DTO fields
+                if (!string.IsNullOrEmpty(dto.FirstName)) user.FirstName = dto.FirstName;
+                if (!string.IsNullOrEmpty(dto.LastName)) user.LastName = dto.LastName;
+                if (!string.IsNullOrEmpty(dto.PhoneNumber)) user.PhoneNumber = dto.PhoneNumber;
+
+                if (!string.IsNullOrEmpty(dto.DriverLicenseNumber)) user.DriverLicenseNumber = dto.DriverLicenseNumber;
+                if (dto.LicenseExpiryDate.HasValue) user.LicenseExpiryDate = dto.LicenseExpiryDate.Value;
+                if (dto.DateOfBirth.HasValue) user.DateOfBirth = dto.DateOfBirth.Value;
+
+                if (!string.IsNullOrEmpty(dto.Street)) user.Street = dto.Street;
+                if (!string.IsNullOrEmpty(dto.City)) user.City = dto.City;
+                if (!string.IsNullOrEmpty(dto.State)) user.State = dto.State;
+                if (!string.IsNullOrEmpty(dto.ZipCode)) user.ZipCode = dto.ZipCode;
+                if (!string.IsNullOrEmpty(dto.Country)) user.Country = dto.Country;
+
+                var result = await _userManager.UpdateAsync(user);
+                if (!result.Succeeded)
+                    return StatusCode(500, new { Message = "Failed to update profile" });
+
+                return Ok(new { Message = "Profile updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Error updating profile", Details = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        [HttpGet("profile")]
+        [Authorize(Roles = "User,Admin,Agent")]
+        public async Task<IActionResult> GetProfile()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new { Message = "Invalid user identity" });
+
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null) return NotFound(new { Message = "User not found" });
+
+                return Ok(new
+                {
+                    user.Id,
+                    user.Email,
+                    user.FirstName,
+                    user.LastName,
+                    user.PhoneNumber,
+                    user.DriverLicenseNumber,
+                    user.LicenseExpiryDate,
+                    user.DateOfBirth,
+                    user.Street,
+                    user.City,
+                    user.State,
+                    user.ZipCode,
+                    user.Country
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Error fetching profile", Details = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        // ✅ Admin: Get user by ID
+        [HttpGet("user/{id}")]
+        [Authorize(Roles = "Admin,Agent")]
+        public async Task<IActionResult> GetUserById(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return NotFound(new { Message = "User not found" });
+
+            return Ok(new
+            {
+                user.Id,
+                user.Email,
+                user.FirstName,
+                user.LastName,
+                user.PhoneNumber,
+                user.DriverLicenseNumber,
+                user.LicenseExpiryDate,
+                user.DateOfBirth,
+                user.Street,
+                user.City,
+                user.State,
+                user.ZipCode,
+                user.Country
+            });
+        }
+
+        // ✅ Admin: Get user by Email
+        [HttpGet("user/by-email/{email}")]
+        [Authorize(Roles = "Admin,Agent")]
+        public async Task<IActionResult> GetUserByEmail(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null) return NotFound(new { Message = "User not found" });
+
+            return Ok(new
+            {
+                user.Id,
+                user.Email,
+                user.FirstName,
+                user.LastName,
+                user.PhoneNumber,
+                user.DriverLicenseNumber,
+                user.LicenseExpiryDate,
+                user.DateOfBirth,
+                user.Street,
+                user.City,
+                user.State,
+                user.ZipCode,
+                user.Country
+            });
+        }
+
+
     }
 }
