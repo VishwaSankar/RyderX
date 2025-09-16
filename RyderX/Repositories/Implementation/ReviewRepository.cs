@@ -60,7 +60,11 @@ namespace RyderX_Server.Repositories.Implementation
         {
             try
             {
-                return await _context.Reviews.Include(u => u.User).Where(r => r.CarId == carId).ToListAsync();
+                return await _context.Reviews
+                    .Include(r => r.User)
+                    .Include(r => r.Car)
+                    .Where(r => r.CarId == carId)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
