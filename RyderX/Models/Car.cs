@@ -41,21 +41,21 @@ namespace RyderX_Server.Models
         [Range(1, 15)]
         public int Seats { get; set; }
 
-        public double? Mileage { get; set; }
+        //public double? Mileage { get; set; }
 
-        public string? EngineType { get; set; }
+        //public string? EngineType { get; set; }
 
-        public bool InsuranceIncluded { get; set; } = false;
+        //public bool InsuranceIncluded { get; set; } = false;
 
-        [MaxLength(50)]
-        public string? FuelPolicy { get; set; }      // “Full to Full”, etc.
+        //[MaxLength(50)]
+        //public string? FuelPolicy { get; set; }      // “Full to Full”, etc.
 
         public string? Features { get; set; }        // Comma-separated, e.g. "GPS, Bluetooth"
 
-        [Url]
-        public string? PhotoUrl { get; set; }
+        //[Url]
+        //public string? PhotoUrl { get; set; }
 
-        public string? ConditionDescription { get; set; }
+        //public string? ConditionDescription { get; set; }
 
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedDate { get; set; }

@@ -28,7 +28,7 @@ namespace RyderX_Server.Context
                 .HasOne(c => c.Location)
                 .WithMany(l => l.Cars)
                 .HasForeignKey(c => c.LocationId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevent cascade delete
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<Reservation>()
                 .HasOne(r => r.PickupLocation)
