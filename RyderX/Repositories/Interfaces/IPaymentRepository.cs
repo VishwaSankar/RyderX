@@ -7,6 +7,7 @@ namespace RyderX_Server.Repositories.Interfaces
         Task<Payment?> GetByIdAsync(int id);
         Task<Payment?> GetByReservationIdAsync(int reservationId);
         Task<IEnumerable<Payment>> GetByUserIdAsync(string userId);
+        Task<IEnumerable<Payment>> GetByUserIdForAdminAsync(string userId); 
         Task AddAsync(Payment payment);
     }
 }

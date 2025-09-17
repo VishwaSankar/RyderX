@@ -9,6 +9,8 @@ namespace RyderX_Server.Repositories.Interfaces
         Task<IEnumerable<Reservation>> GetByUserIdAsync(string userId);
         Task<IEnumerable<Reservation>> GetByCarIdAsync(int carId);
         Task<IEnumerable<Reservation>> GetActiveReservationsAsync(string userId);
+        Task<IEnumerable<Reservation>> GetByUserIdForAdminAsync(string userId); 
+
         Task AddAsync(Reservation reservation);
         Task UpdateStatusAsync(int id, string status); // Booked, Cancelled, Completed
         Task CancelAsync(int id);

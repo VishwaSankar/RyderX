@@ -192,5 +192,26 @@ namespace RyderX_Server.Repositories.Implementation
                 throw new Exception($"Error updating reservation {id}", ex);
             }
         }
+        public async Task<IEnumerable<Reservation>> GetByUserIdForAdminAsync(string userId)
+        {
+            try
+            {
+                return await _context.Reservations
+                    .Where(r => r.UserId == userId)
+                    .Include(r => r.Car)
+                    .Include(r => r.PickupLocation)
+                    .Include(r => r.DropoffLocation)
+                    .Include(r => r.User)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error fetching reservations for user {userId} (Admin)", ex);
+            }
+        }
+
+
+
+
     }
 }

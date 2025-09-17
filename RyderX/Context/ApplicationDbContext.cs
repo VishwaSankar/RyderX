@@ -18,6 +18,7 @@ namespace RyderX_Server.Context
         public DbSet<Review> Reviews { get; set; }
         public DbSet<ExtraService> ExtraServices { get; set; }
         public DbSet<BookingHistory> BookingHistories { get; set; }
+        public DbSet<Announcement> Announcements { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

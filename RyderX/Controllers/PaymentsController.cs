@@ -137,5 +137,36 @@ namespace RyderX_Server.Controllers
                 return StatusCode(500, new { Message = "Error creating payment", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
+        // GET: api/payments/admin/user/{userId}
+        [HttpGet("admin/user/{userId}")]
+        [Authorize(Roles = "Admin,Agent")]
+        public async Task<IActionResult> GetPaymentsByUserIdForAdmin(string userId)
+        {
+            try
+            {
+                var payments = await _paymentRepository.GetByUserIdForAdminAsync(userId);
+
+                if (!payments.Any())
+                    return NotFound(new { Message = "No payments found for this user" });
+
+                var result = payments.Select(p => new
+                {
+                    p.Id,
+                    UserEmail = p.Reservation?.User?.Email ?? "Unknown",
+                    ReservationId = p.ReservationId,
+                    Amount = p.Amount,
+                    PaymentMethod = p.PaymentMethod,
+                    PaidAt = p.PaidAt,
+                    TransactionId = p.TransactionId
+                });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Error fetching payments", Details = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
     }
 }

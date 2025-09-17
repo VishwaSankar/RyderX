@@ -147,5 +147,39 @@ namespace RyderX_Server.Controllers
                 return StatusCode(500, new { Message = "Error cancelling reservation", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
+
+        // GET: api/reservations/admin/user/{userId}
+        [HttpGet("admin/user/{userId}")]
+        [Authorize(Roles = "Admin,Agent")]
+        public async Task<IActionResult> GetReservationsByUserIdForAdmin(string userId)
+        {
+            try
+            {
+                var reservations = await _reservationRepository.GetByUserIdForAdminAsync(userId);
+
+                if (!reservations.Any())
+                    return NotFound(new { Message = "No reservations found for this user" });
+
+                var result = reservations.Select(r => new
+                {
+                    r.Id,
+                    UserEmail = r.User?.Email ?? "Unknown",
+                    Car = r.Car != null ? r.Car.Make + " " + r.Car.Model : "Unknown Car",
+                    r.PickupAt,
+                    r.DropoffAt,
+                    PickupLocation = r.PickupLocation?.Name ?? "N/A",
+                    DropoffLocation = r.DropoffLocation?.Name ?? "N/A",
+                    r.TotalPrice,
+                    r.Status
+                });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Error fetching reservations", Details = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
     }
 }

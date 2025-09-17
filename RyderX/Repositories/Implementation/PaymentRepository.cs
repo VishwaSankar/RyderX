@@ -84,5 +84,21 @@ namespace RyderX_Server.Repositories.Implementation
                 throw new Exception($"Error fetching payments for user {userId}", ex);
             }
         }
+        public async Task<IEnumerable<Payment>> GetByUserIdForAdminAsync(string userId)
+        {
+            try
+            {
+                return await _context.Payments
+                    .Include(p => p.Reservation)
+                    .ThenInclude(r => r.User)
+                    .Where(p => p.Reservation.UserId == userId)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error fetching payments for user {userId} (Admin)", ex);
+            }
+        }
+
     }
 }
