@@ -82,18 +82,26 @@ namespace RyderX_Server.Repositories.Implementation
                 if (reservation == null)
                     throw new Exception("Invalid ReservationId");
 
+                if (reservation.Car == null)
+                    throw new Exception("Reservation has no valid car");
+
+                var days = (reservation.DropoffAt.Date - reservation.PickupAt.Date).Days;
+                if (days <= 0) throw new Exception("Invalid pickup/dropoff dates");
+
+                var calculatedTotal = days * reservation.Car.PricePerDay;
+
                 var history = new BookingHistory
                 {
                     ReservationId = reservation.Id,
                     UserId = reservation.UserId!,
-                    CarMake = reservation.Car?.Make ?? "Unknown",
-                    CarModel = reservation.Car?.Model ?? "Unknown",
-                    CarLicensePlate = reservation.Car?.LicensePlate ?? "N/A",
+                    CarMake = reservation.Car.Make,
+                    CarModel = reservation.Car.Model,
+                    CarLicensePlate = reservation.Car.LicensePlate ?? "N/A",
                     PickupAt = reservation.PickupAt,
                     DropoffAt = reservation.DropoffAt,
                     PickupLocation = reservation.PickupLocation?.Name ?? "N/A",
                     DropoffLocation = reservation.DropoffLocation?.Name ?? "N/A",
-                    TotalPrice = reservation.TotalPrice,
+                    TotalPrice = calculatedTotal,
                     Status = reservation.Status,
                     CreatedAt = DateTime.UtcNow
                 };

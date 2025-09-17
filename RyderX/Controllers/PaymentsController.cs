@@ -117,7 +117,6 @@ namespace RyderX_Server.Controllers
                 var payment = new Payment
                 {
                     ReservationId = dto.ReservationId,
-                    Amount = dto.Amount,
                     PaymentMethod = dto.PaymentMethod,
                     TransactionId = dto.TransactionId,
                     PaidAt = DateTime.UtcNow
@@ -129,7 +128,8 @@ namespace RyderX_Server.Controllers
                 {
                     Message = "Payment created successfully",
                     PaymentId = payment.Id,
-                    ReservationStatus = "Booked"
+                    ReservationId = payment.ReservationId,
+                    FinalAmount = payment.Amount // ✅ auto-calculated
                 });
             }
             catch (Exception ex)

@@ -99,7 +99,8 @@ namespace RyderX_Server.Controllers
                 return Ok(new
                 {
                     Message = "Booking history recorded successfully",
-                    HistoryId = history.Id
+                    HistoryId = history.Id,
+                    FinalAmount = history.TotalPrice 
                 });
             }
             catch (Exception ex)

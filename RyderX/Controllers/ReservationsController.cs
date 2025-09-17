@@ -12,10 +12,12 @@ namespace RyderX_Server.Controllers
     public class ReservationsController : ControllerBase
     {
         private readonly IReservationRepository _reservationRepository;
+        private readonly ICarRepository _carRepository;
 
-        public ReservationsController(IReservationRepository reservationRepository)
+        public ReservationsController(IReservationRepository reservationRepository, ICarRepository carRepository)
         {
             _reservationRepository = reservationRepository;
+            _carRepository = carRepository;
         }
 
         // GET: api/reservations
@@ -84,6 +86,9 @@ namespace RyderX_Server.Controllers
 
         [HttpPost]
         [Authorize(Roles = "User")]
+        // POST: api/reservations
+        [HttpPost]
+        [Authorize(Roles = "User")]
         public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto dto)
         {
             try
@@ -94,6 +99,19 @@ namespace RyderX_Server.Controllers
                 if (string.IsNullOrEmpty(userId))
                     return Unauthorized(new { Message = "Invalid user identity" });
 
+                if (dto.PickupAt.Date < DateTime.UtcNow.Date)
+                    return BadRequest(new { Message = "Pickup date cannot be in the past" });
+
+                if (dto.DropoffAt <= dto.PickupAt)
+                    return BadRequest(new { Message = "Dropoff date must be after pickup date" });
+
+                var days = (dto.DropoffAt.Date - dto.PickupAt.Date).Days;
+
+                var car = await _carRepository.GetByIdAsync(dto.CarId);
+                if (car == null) return NotFound(new { Message = "Car not found" });
+
+                var totalPrice = days * car.PricePerDay;
+
                 var reservation = new Reservation
                 {
                     CarId = dto.CarId,
@@ -102,12 +120,19 @@ namespace RyderX_Server.Controllers
                     DropoffAt = dto.DropoffAt,
                     PickupLocationId = dto.PickupLocationId,
                     DropoffLocationId = dto.DropoffLocationId,
-                    TotalPrice = dto.TotalPrice,
-                    Status = "Booked"
+                    TotalPrice = totalPrice,
+                    Status = "Pending"
                 };
 
                 await _reservationRepository.AddAsync(reservation);
-                return Ok(new { Message = "Reservation created successfully", ReservationId = reservation.Id });
+
+                return Ok(new
+                {
+                    Message = "Reservation created successfully",
+                    ReservationId = reservation.Id,
+                    TotalPrice = totalPrice,
+                    Days = days
+                });
             }
             catch (Exception ex)
             {

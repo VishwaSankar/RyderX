@@ -14,18 +14,33 @@ namespace RyderX_Server.Repositories.Implementation
             _context = context;
         }
 
-        // Add a new payment
         public async Task AddAsync(Payment payment)
         {
             try
             {
+                // ✅ Get reservation with car
+                var reservation = await _context.Reservations
+                    .Include(r => r.Car)
+                    .FirstOrDefaultAsync(r => r.Id == payment.ReservationId);
+
+                if (reservation == null) throw new Exception("Reservation not found");
+                if (reservation.Car == null) throw new Exception("Car not found for reservation");
+
+                var days = (reservation.DropoffAt.Date - reservation.PickupAt.Date).Days;
+                if (days <= 0) throw new Exception("Invalid reservation dates");
+
+                // ✅ Calculate correct amount
+                var calculatedAmount = days * reservation.Car.PricePerDay;
+
+                // ✅ Overwrite amount (ignore client value)
+                payment.Amount = calculatedAmount;
+
                 await _context.Payments.AddAsync(payment);
 
-                var reservation = await _context.Reservations.FindAsync(payment.ReservationId);
-                if (reservation != null)
-                {
-                    reservation.Status = "Booked";
-                }
+                // Mark reservation as booked after payment
+                reservation.Status = "Booked";
+                reservation.TotalPrice = calculatedAmount;
+                _context.Reservations.Update(reservation);
 
                 await _context.SaveChangesAsync();
             }
@@ -35,69 +50,39 @@ namespace RyderX_Server.Repositories.Implementation
             }
         }
 
-        // Get payment by Id
+        // Other methods unchanged...
         public async Task<Payment?> GetByIdAsync(int id)
         {
-            try
-            {
-                return await _context.Payments
-                    .Include(p => p.Reservation)
-                    .ThenInclude(r => r.User)
-                    .FirstOrDefaultAsync(p => p.Id == id);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error fetching payment {id}", ex);
-            }
+            return await _context.Payments
+                .Include(p => p.Reservation)
+                .ThenInclude(r => r.User)
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
-        // Get payment by reservation Id
         public async Task<Payment?> GetByReservationIdAsync(int reservationId)
         {
-            try
-            {
-                return await _context.Payments
-                    .Include(p => p.Reservation)
-                    .ThenInclude(r => r.User)
-                    .FirstOrDefaultAsync(p => p.ReservationId == reservationId);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error fetching payment for reservation {reservationId}", ex);
-            }
+            return await _context.Payments
+                .Include(p => p.Reservation)
+                .ThenInclude(r => r.User)
+                .FirstOrDefaultAsync(p => p.ReservationId == reservationId);
         }
 
-        // Get payments by user Id
         public async Task<IEnumerable<Payment>> GetByUserIdAsync(string userId)
         {
-            try
-            {
-                return await _context.Payments
-                    .Include(p => p.Reservation)
-                    .ThenInclude(r => r.User)
-                    .Where(p => p.Reservation.UserId == userId)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error fetching payments for user {userId}", ex);
-            }
-        }
-        public async Task<IEnumerable<Payment>> GetByUserIdForAdminAsync(string userId)
-        {
-            try
-            {
-                return await _context.Payments
-                    .Include(p => p.Reservation)
-                    .ThenInclude(r => r.User)
-                    .Where(p => p.Reservation.UserId == userId)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Error fetching payments for user {userId} (Admin)", ex);
-            }
+            return await _context.Payments
+                .Include(p => p.Reservation)
+                .ThenInclude(r => r.User)
+                .Where(p => p.Reservation.UserId == userId)
+                .ToListAsync();
         }
 
+        public async Task<IEnumerable<Payment>> GetByUserIdForAdminAsync(string userId)
+        {
+            return await _context.Payments
+                .Include(p => p.Reservation)
+                .ThenInclude(r => r.User)
+                .Where(p => p.Reservation.UserId == userId)
+                .ToListAsync();
+        }
     }
 }
