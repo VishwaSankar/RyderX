@@ -16,7 +16,6 @@ namespace RyderX_Server.Context
         public DbSet<Reservation> Reservations { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Review> Reviews { get; set; }
-        public DbSet<ExtraService> ExtraServices { get; set; }
         public DbSet<BookingHistory> BookingHistories { get; set; }
         public DbSet<Announcement> Announcements { get; set; }
 

@@ -21,7 +21,6 @@ namespace RyderX_Server.Repositories.Implementation
             {
                 await _context.Payments.AddAsync(payment);
 
-                // ✅ also update reservation status to Booked
                 var reservation = await _context.Reservations.FindAsync(payment.ReservationId);
                 if (reservation != null)
                 {

@@ -15,13 +15,26 @@ namespace RyderX_Server.Repositories.Implementation
 
         public async Task AddAsync(Reservation reservation)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                var car = await _context.Cars.FindAsync(reservation.CarId);
+                if (car == null) throw new Exception("Car not found");
+
+                if (!car.IsAvailable) throw new Exception("Car is already reserved/unavailable");
+
+                // mark car unavailable when reservation is created
+                car.IsAvailable = false;
+                _context.Cars.Update(car);
+
                 await _context.Reservations.AddAsync(reservation);
                 await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
             }
             catch (Exception ex)
             {
+                await _context.Database.RollbackTransactionAsync();
                 throw new Exception($"Error adding reservation: {ex.InnerException?.Message ?? ex.Message}", ex);
             }
         }
@@ -39,9 +52,17 @@ namespace RyderX_Server.Repositories.Implementation
                 if (reservation != null)
                 {
                     reservation.Status = "Cancelled";
+
+                    if (reservation.Car != null)
+                    {
+                        // free car on cancel
+                        reservation.Car.IsAvailable = true;
+                        _context.Cars.Update(reservation.Car);
+                    }
+
                     await _context.SaveChangesAsync();
 
-                    // auto log booking history
+                    // log booking history
                     var history = new BookingHistory
                     {
                         ReservationId = reservation.Id,
@@ -106,6 +127,7 @@ namespace RyderX_Server.Repositories.Implementation
             {
                 return await _context.Reservations
                     .Where(r => r.CarId == carId)
+                    .Include(r => r.Car)
                     .ToListAsync();
             }
             catch (Exception ex)
@@ -162,10 +184,16 @@ namespace RyderX_Server.Repositories.Implementation
                 if (reservation != null)
                 {
                     reservation.Status = status;
-                    await _context.SaveChangesAsync();
 
                     if (status == "Completed" || status == "Cancelled")
                     {
+                        if (reservation.Car != null)
+                        {
+                            // free car on completion/cancellation
+                            reservation.Car.IsAvailable = true;
+                            _context.Cars.Update(reservation.Car);
+                        }
+
                         var history = new BookingHistory
                         {
                             ReservationId = reservation.Id,
@@ -183,8 +211,9 @@ namespace RyderX_Server.Repositories.Implementation
                         };
 
                         _context.BookingHistories.Add(history);
-                        await _context.SaveChangesAsync();
                     }
+
+                    await _context.SaveChangesAsync();
                 }
             }
             catch (Exception ex)
@@ -192,6 +221,7 @@ namespace RyderX_Server.Repositories.Implementation
                 throw new Exception($"Error updating reservation {id}", ex);
             }
         }
+
         public async Task<IEnumerable<Reservation>> GetByUserIdForAdminAsync(string userId)
         {
             try
@@ -209,6 +239,5 @@ namespace RyderX_Server.Repositories.Implementation
                 throw new Exception($"Error fetching reservations for user {userId} (Admin)", ex);
             }
         }
-
     }
 }

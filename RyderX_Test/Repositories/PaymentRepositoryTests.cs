@@ -16,12 +16,10 @@ namespace RyderX_Tests.Repositories
             var reservationRepo = new ReservationRepository(context);
             var paymentRepo = new PaymentRepository(context);
 
-            // 🔹 Seed Location
             var location = new Location { Name = "Main Branch", City = "Chennai" };
             await context.Locations.AddAsync(location);
             await context.SaveChangesAsync();
 
-            // 🔹 Seed Car
             var car = new Car
             {
                 Make = "Hyundai",
@@ -34,7 +32,6 @@ namespace RyderX_Tests.Repositories
             await context.Cars.AddAsync(car);
             await context.SaveChangesAsync();
 
-            // 🔹 Seed User
             var user = new ApplicationUser
             {
                 Id = "user1",
@@ -44,7 +41,6 @@ namespace RyderX_Tests.Repositories
             await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
 
-            // 🔹 Seed Reservation
             var reservation = new Reservation
             {
                 CarId = car.Id,
@@ -58,7 +54,6 @@ namespace RyderX_Tests.Repositories
             };
             await reservationRepo.AddAsync(reservation);
 
-            // 🔹 Now create Payment (ReservationId must exist!)
             var payment = new Payment
             {
                 ReservationId = reservation.Id,

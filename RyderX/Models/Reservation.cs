@@ -9,14 +9,12 @@ namespace RyderX_Server.Models
     {
         public int Id { get; set; }
 
-        // FK to Car
         [Required]
         public int CarId { get; set; }
 
         [ForeignKey("CarId")]
         public Car? Car { get; set; }
 
-        // FK to User
         [Required]
         public string UserId { get; set; } = null!;
 
@@ -31,13 +29,11 @@ namespace RyderX_Server.Models
 
         [Required, Range(0, double.MaxValue)]
         [Column(TypeName = "decimal(18,2)")]
-
         public decimal TotalPrice { get; set; }
 
         [Required, MaxLength(20)]
-        public string Status { get; set; } = "Pending";   
+        public string Status { get; set; } = "Pending";
 
-        // Pickup and Dropoff Locations (FKs)
         [Required]
         public int PickupLocationId { get; set; }
 
@@ -50,7 +46,6 @@ namespace RyderX_Server.Models
         [ForeignKey("DropoffLocationId")]
         public Location? DropoffLocation { get; set; }
 
-        // Payment navigation (one-to-one): Payment may be null until paid
         public Payment? Payment { get; set; }
     }
 }

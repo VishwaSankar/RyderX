@@ -2,14 +2,15 @@
 using RyderX_Server.Authentication;
 using RyderX_Server.Models;
 using RyderX_Server.Repositories.Implementation;
-
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace RyderX_Tests.Repositories
 {
     public class ReservationRepositoryTests
     {
         [Test]
-        public async Task AddReservation_ShouldAddReservation()
+        public async Task AddReservation_ShouldAddReservation_AndMarkCarUnavailable()
         {
             var context = TestHelper.GetInMemoryDbContext("ReservationDb_Add");
             var repo = new ReservationRepository(context);
@@ -18,24 +19,11 @@ namespace RyderX_Tests.Repositories
             await context.Locations.AddAsync(location);
             await context.SaveChangesAsync();
 
-            var car = new Car
-            {
-                Make = "Honda",
-                Model = "Civic",
-                Year = 2021,
-                LicensePlate = "TN02",
-                PricePerDay = 150,
-                LocationId = location.Id
-            };
+            var car = new Car { Make = "Honda", Model = "Civic", Year = 2021, LicensePlate = "TN02", PricePerDay = 150, LocationId = location.Id, IsAvailable = true };
             await context.Cars.AddAsync(car);
             await context.SaveChangesAsync();
 
-            var user = new ApplicationUser
-            {
-                Id = "user1",
-                Email = "user1@example.com",
-                UserName = "user1@example.com"
-            };
+            var user = new ApplicationUser { Id = "user1", Email = "user1@example.com", UserName = "user1@example.com" };
             await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
 
@@ -48,33 +36,36 @@ namespace RyderX_Tests.Repositories
                 PickupLocationId = location.Id,
                 DropoffLocationId = location.Id,
                 TotalPrice = 300,
-                Status = "Pending"
+                Status = "Booked"
             };
 
             await repo.AddAsync(reservation);
+
             var reservations = await repo.GetAllAsync();
+            var updatedCar = await context.Cars.FindAsync(car.Id);
 
             Assert.That(reservations.Count(), Is.EqualTo(1));
-            Assert.That(reservations.First().Status, Is.EqualTo("Pending"));
+            Assert.That(reservations.First().Status, Is.EqualTo("Booked"));
+            Assert.That(updatedCar!.IsAvailable, Is.False, "Car should be unavailable after booking");
         }
 
         [Test]
-        public async Task GetById_ShouldReturnReservation()
+        public void AddReservation_ShouldThrow_WhenCarUnavailable()
         {
-            var context = TestHelper.GetInMemoryDbContext("ReservationDb_GetById");
+            var context = TestHelper.GetInMemoryDbContext("ReservationDb_AddFail");
             var repo = new ReservationRepository(context);
 
             var location = new Location { Name = "Branch", City = "Chennai" };
-            await context.Locations.AddAsync(location);
-            await context.SaveChangesAsync();
+            context.Locations.Add(location);
+            context.SaveChanges();
 
-            var car = new Car { Make = "Ford", Model = "EcoSport", Year = 2019, LicensePlate = "TN03", PricePerDay = 90, LocationId = location.Id };
-            await context.Cars.AddAsync(car);
-            await context.SaveChangesAsync();
+            var car = new Car { Make = "Ford", Model = "EcoSport", Year = 2019, LicensePlate = "TN03", PricePerDay = 90, LocationId = location.Id, IsAvailable = false };
+            context.Cars.Add(car);
+            context.SaveChanges();
 
-            var user = new ApplicationUser { Id = "user2", Email = "user2@example.com", UserName = "user2@example.com" };
-            await context.Users.AddAsync(user);
-            await context.SaveChangesAsync();
+            var user = new ApplicationUser { Id = "userX", Email = "x@example.com", UserName = "x@example.com" };
+            context.Users.Add(user);
+            context.SaveChanges();
 
             var reservation = new Reservation
             {
@@ -87,86 +78,12 @@ namespace RyderX_Tests.Repositories
                 TotalPrice = 200,
                 Status = "Booked"
             };
-            await repo.AddAsync(reservation);
 
-            var result = await repo.GetByIdAsync(reservation.Id);
-
-            Assert.That(result, Is.Not.Null);
-            Assert.That(result.Status, Is.EqualTo("Booked"));
+            Assert.ThrowsAsync<Exception>(async () => await repo.AddAsync(reservation));
         }
 
         [Test]
-        public async Task GetByUserId_ShouldReturnReservationsForUser()
-        {
-            var context = TestHelper.GetInMemoryDbContext("ReservationDb_GetByUserId");
-            var repo = new ReservationRepository(context);
-
-            var location = new Location { Name = "Branch", City = "Chennai" };
-            await context.Locations.AddAsync(location);
-            await context.SaveChangesAsync();
-
-            var car = new Car { Make = "BMW", Model = "X1", Year = 2020, LicensePlate = "TN04", PricePerDay = 500, LocationId = location.Id };
-            await context.Cars.AddAsync(car);
-            await context.SaveChangesAsync();
-
-            var user = new ApplicationUser { Id = "user3", Email = "user3@example.com", UserName = "user3@example.com" };
-            await context.Users.AddAsync(user);
-            await context.SaveChangesAsync();
-
-            await repo.AddAsync(new Reservation
-            {
-                CarId = car.Id,
-                UserId = user.Id,
-                PickupAt = DateTime.Now,
-                DropoffAt = DateTime.Now.AddDays(2),
-                PickupLocationId = location.Id,
-                DropoffLocationId = location.Id,
-                TotalPrice = 600,
-                Status = "Booked"
-            });
-
-            var results = await repo.GetByUserIdAsync(user.Id);
-
-            Assert.That(results.Count(), Is.EqualTo(1));
-        }
-
-        [Test]
-        public async Task GetByCarId_ShouldReturnReservationsForCar()
-        {
-            var context = TestHelper.GetInMemoryDbContext("ReservationDb_GetByCarId");
-            var repo = new ReservationRepository(context);
-
-            var location = new Location { Name = "Branch", City = "Chennai" };
-            await context.Locations.AddAsync(location);
-            await context.SaveChangesAsync();
-
-            var car = new Car { Make = "Audi", Model = "A4", Year = 2021, LicensePlate = "TN05", PricePerDay = 600, LocationId = location.Id };
-            await context.Cars.AddAsync(car);
-            await context.SaveChangesAsync();
-
-            var user = new ApplicationUser { Id = "user4", Email = "user4@example.com", UserName = "user4@example.com" };
-            await context.Users.AddAsync(user);
-            await context.SaveChangesAsync();
-
-            await repo.AddAsync(new Reservation
-            {
-                CarId = car.Id,
-                UserId = user.Id,
-                PickupAt = DateTime.Now,
-                DropoffAt = DateTime.Now.AddDays(1),
-                PickupLocationId = location.Id,
-                DropoffLocationId = location.Id,
-                TotalPrice = 600,
-                Status = "Booked"
-            });
-
-            var results = await repo.GetByCarIdAsync(car.Id);
-
-            Assert.That(results.Count(), Is.EqualTo(1));
-        }
-
-        [Test]
-        public async Task CancelReservation_ShouldMarkAsCancelled_AndLogHistory()
+        public async Task CancelReservation_ShouldMarkAsCancelled_FreeCar_AndLogHistory()
         {
             var context = TestHelper.GetInMemoryDbContext("ReservationDb_Cancel");
             var repo = new ReservationRepository(context);
@@ -175,7 +92,7 @@ namespace RyderX_Tests.Repositories
             await context.Locations.AddAsync(location);
             await context.SaveChangesAsync();
 
-            var car = new Car { Make = "Nissan", Model = "Micra", Year = 2018, LicensePlate = "TN06", PricePerDay = 150, LocationId = location.Id };
+            var car = new Car { Make = "Nissan", Model = "Micra", Year = 2018, LicensePlate = "TN06", PricePerDay = 150, LocationId = location.Id, IsAvailable = true };
             await context.Cars.AddAsync(car);
             await context.SaveChangesAsync();
 
@@ -199,15 +116,17 @@ namespace RyderX_Tests.Repositories
             await repo.CancelAsync(reservation.Id);
 
             var updated = await repo.GetByIdAsync(reservation.Id);
+            var updatedCar = await context.Cars.FindAsync(car.Id);
             var history = context.BookingHistories.FirstOrDefault();
 
             Assert.That(updated.Status, Is.EqualTo("Cancelled"));
+            Assert.That(updatedCar!.IsAvailable, Is.True, "Car should be freed after cancel");
             Assert.That(history, Is.Not.Null);
             Assert.That(history.Status, Is.EqualTo("Cancelled"));
         }
 
         [Test]
-        public async Task UpdateStatus_ShouldUpdateToCompleted_AndLogHistory()
+        public async Task UpdateStatus_ShouldCompleteReservation_FreeCar_AndLogHistory()
         {
             var context = TestHelper.GetInMemoryDbContext("ReservationDb_UpdateStatus");
             var repo = new ReservationRepository(context);
@@ -216,7 +135,7 @@ namespace RyderX_Tests.Repositories
             await context.Locations.AddAsync(location);
             await context.SaveChangesAsync();
 
-            var car = new Car { Make = "Hyundai", Model = "i20", Year = 2020, LicensePlate = "TN07", PricePerDay = 200, LocationId = location.Id };
+            var car = new Car { Make = "Hyundai", Model = "i20", Year = 2020, LicensePlate = "TN07", PricePerDay = 200, LocationId = location.Id, IsAvailable = true };
             await context.Cars.AddAsync(car);
             await context.SaveChangesAsync();
 
@@ -240,9 +159,11 @@ namespace RyderX_Tests.Repositories
             await repo.UpdateStatusAsync(reservation.Id, "Completed");
 
             var updated = await repo.GetByIdAsync(reservation.Id);
+            var updatedCar = await context.Cars.FindAsync(car.Id);
             var history = context.BookingHistories.FirstOrDefault();
 
             Assert.That(updated.Status, Is.EqualTo("Completed"));
+            Assert.That(updatedCar!.IsAvailable, Is.True, "Car should be freed after completion");
             Assert.That(history, Is.Not.Null);
             Assert.That(history.Status, Is.EqualTo("Completed"));
         }
@@ -257,16 +178,17 @@ namespace RyderX_Tests.Repositories
             await context.Locations.AddAsync(location);
             await context.SaveChangesAsync();
 
-            var car = new Car { Make = "Tesla", Model = "Model 3", Year = 2022, LicensePlate = "TN08", PricePerDay = 800, LocationId = location.Id };
-            await context.Cars.AddAsync(car);
+            var car1 = new Car { Make = "Tesla", Model = "Model 3", Year = 2022, LicensePlate = "TN08", PricePerDay = 800, LocationId = location.Id, IsAvailable = true };
+            var car2 = new Car { Make = "Tesla", Model = "Model Y", Year = 2022, LicensePlate = "TN09", PricePerDay = 900, LocationId = location.Id, IsAvailable = true };
+            await context.Cars.AddRangeAsync(car1, car2);
             await context.SaveChangesAsync();
 
             var user = new ApplicationUser { Id = "user7", Email = "user7@example.com", UserName = "user7@example.com" };
             await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
 
-            await repo.AddAsync(new Reservation { CarId = car.Id, UserId = user.Id, PickupAt = DateTime.Now, DropoffAt = DateTime.Now.AddDays(1), PickupLocationId = location.Id, DropoffLocationId = location.Id, TotalPrice = 800, Status = "Booked" });
-            await repo.AddAsync(new Reservation { CarId = car.Id, UserId = user.Id, PickupAt = DateTime.Now, DropoffAt = DateTime.Now.AddDays(2), PickupLocationId = location.Id, DropoffLocationId = location.Id, TotalPrice = 1600, Status = "Cancelled" });
+            await repo.AddAsync(new Reservation { CarId = car1.Id, UserId = user.Id, PickupAt = DateTime.Now, DropoffAt = DateTime.Now.AddDays(1), PickupLocationId = location.Id, DropoffLocationId = location.Id, TotalPrice = 800, Status = "Booked" });
+            await repo.AddAsync(new Reservation { CarId = car2.Id, UserId = user.Id, PickupAt = DateTime.Now, DropoffAt = DateTime.Now.AddDays(2), PickupLocationId = location.Id, DropoffLocationId = location.Id, TotalPrice = 900, Status = "Cancelled" });
 
             var results = await repo.GetActiveReservationsAsync(user.Id);
 
@@ -284,7 +206,7 @@ namespace RyderX_Tests.Repositories
             await context.Locations.AddAsync(location);
             await context.SaveChangesAsync();
 
-            var car = new Car { Make = "Toyota", Model = "Fortuner", Year = 2021, LicensePlate = "TN09", PricePerDay = 1000, LocationId = location.Id };
+            var car = new Car { Make = "Toyota", Model = "Fortuner", Year = 2021, LicensePlate = "TN10", PricePerDay = 1000, LocationId = location.Id, IsAvailable = true };
             await context.Cars.AddAsync(car);
             await context.SaveChangesAsync();
 

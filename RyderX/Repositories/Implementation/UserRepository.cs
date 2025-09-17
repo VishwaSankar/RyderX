@@ -16,14 +16,32 @@ namespace RyderX_Server.Repositories.Implementation
 
         public async Task<ApplicationUser?> GetByIdAsync(string userId)
         {
-            return await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            try
+            {
+                return await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error retrieving user with Id {userId}: {ex.Message}", ex);
+            }
         }
 
         public async Task UpdateAsync(ApplicationUser user)
         {
-            var result = await _userManager.UpdateAsync(user);
-            if (!result.Succeeded)
-                throw new Exception("Error updating user profile");
+            try
+            {
+                var result = await _userManager.UpdateAsync(user);
+
+                if (!result.Succeeded)
+                {
+                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                    throw new Exception($"Error updating user profile: {errors}");
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Unexpected error while updating user {user.Id}: {ex.Message}", ex);
+            }
         }
     }
 }

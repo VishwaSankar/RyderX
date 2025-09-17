@@ -82,7 +82,6 @@ namespace RyderX_Server.Controllers
             }
         }
 
-        // POST: api/reservations
         [HttpPost]
         [Authorize(Roles = "User")]
         public async Task<IActionResult> CreateReservation([FromBody] CreateReservationDto dto)
@@ -104,7 +103,7 @@ namespace RyderX_Server.Controllers
                     PickupLocationId = dto.PickupLocationId,
                     DropoffLocationId = dto.DropoffLocationId,
                     TotalPrice = dto.TotalPrice,
-                    Status = "Pending"
+                    Status = "Booked"
                 };
 
                 await _reservationRepository.AddAsync(reservation);
@@ -115,6 +114,7 @@ namespace RyderX_Server.Controllers
                 return StatusCode(500, new { Message = "Error creating reservation", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
+
 
         // PUT: api/reservations/status
         [HttpPut("status")]

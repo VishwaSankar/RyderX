@@ -69,7 +69,6 @@ namespace RyderX_Server.Repositories.Implementation
             }
         }
 
-        // ✅ Create booking history based on reservation (used by controller or reservation repo)
         public async Task<BookingHistory> CreateFromReservationAsync(int reservationId)
         {
             try

@@ -200,5 +200,40 @@ namespace RyderX_Server.Controllers
                 return StatusCode(500, new { Message = $"Error deleting car {id}", Details = ex.Message });
             }
         }
+        // GET: api/cars/available
+        [HttpGet("available")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAvailableCars()
+        {
+            try
+            {
+                var cars = await _carRepository.GetAllAsync();
+                var availableCars = cars.Where(c => c.IsAvailable);
+
+                var result = availableCars.Select(c => new CarDto
+                {
+                    Id = c.Id,
+                    Make = c.Make,
+                    Model = c.Model,
+                    Year = c.Year,
+                    LicensePlate = c.LicensePlate,
+                    PricePerDay = c.PricePerDay,
+                    IsAvailable = c.IsAvailable,
+                    Category = c.Category,
+                    FuelType = c.FuelType,
+                    Transmission = c.Transmission,
+                    Seats = c.Seats,
+                    Features = c.Features,
+                    LocationName = c.Location?.Name ?? ""
+                });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Error fetching available cars", Details = ex.Message });
+            }
+        }
+
     }
 }

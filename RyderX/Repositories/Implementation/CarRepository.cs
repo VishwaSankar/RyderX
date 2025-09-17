@@ -8,6 +8,7 @@ namespace RyderX_Server.Repositories.Implementation
     public class CarRepository : ICarRepository
     {
         private readonly ApplicationDbContext _context;
+
         public CarRepository(ApplicationDbContext context)
         {
             _context = context;
@@ -20,11 +21,10 @@ namespace RyderX_Server.Repositories.Implementation
                 await _context.Cars.AddAsync(car);
                 await _context.SaveChangesAsync();
             }
-            catch (Exception ex) 
-            { 
-                throw new Exception("Error Adding Car", ex); 
+            catch (Exception ex)
+            {
+                throw new Exception("Error adding car", ex);
             }
-
         }
 
         public async Task DeleteAsync(int id)
@@ -32,19 +32,15 @@ namespace RyderX_Server.Repositories.Implementation
             try
             {
                 var car = await _context.Cars.FindAsync(id);
-                if(car == null)
-                {
-                    throw new Exception($"No Car found with id: {id}");
-                }
-                if(car != null)
-                {
-                    _context.Cars.Remove(car);
-                    await _context.SaveChangesAsync();
-                }
+                if (car == null)
+                    throw new Exception($"No car found with id: {id}");
+
+                _context.Cars.Remove(car);
+                await _context.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error Deleting Car with id: {id}", ex);
+                throw new Exception($"Error deleting car with id: {id}", ex);
             }
         }
 
@@ -52,11 +48,13 @@ namespace RyderX_Server.Repositories.Implementation
         {
             try
             {
-                return await _context.Cars.Include(c => c.Location).ToListAsync();
+                return await _context.Cars
+                    .Include(c => c.Location)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
-                throw new Exception("Error fetching all Cars",ex);
+                throw new Exception("Error fetching all cars", ex);
             }
         }
 
@@ -64,7 +62,9 @@ namespace RyderX_Server.Repositories.Implementation
         {
             try
             {
-              return await _context.Cars.Include(c => c.Location).FirstOrDefaultAsync(c => c.Id == id);
+                return await _context.Cars
+                    .Include(c => c.Location)
+                    .FirstOrDefaultAsync(c => c.Id == id);
             }
             catch (Exception ex)
             {
@@ -76,8 +76,10 @@ namespace RyderX_Server.Repositories.Implementation
         {
             try
             {
-                return await _context.Cars.Where(c => c.LocationId == locationId).ToListAsync();
-
+                return await _context.Cars
+                    .Include(c => c.Location) 
+                    .Where(c => c.LocationId == locationId)
+                    .ToListAsync();
             }
             catch (Exception ex)
             {
@@ -85,34 +87,61 @@ namespace RyderX_Server.Repositories.Implementation
             }
         }
 
-        public async Task<IEnumerable<Car>> SearchAsync(string? make, string? model, string? category,
-            decimal? minPrice, decimal? maxPrice, int? locationId, bool onlyAvailable = true)
+        public async Task<IEnumerable<Car>> SearchAsync(
+            string? make,
+            string? model,
+            string? category,
+            decimal? minPrice,
+            decimal? maxPrice,
+            int? locationId,
+            bool onlyAvailable = true)
         {
             try
             {
                 var query = _context.Cars.AsQueryable();
-                if (!string.IsNullOrEmpty(make)) query = query.Where(c => c.Make.Contains(make));
-                if (!string.IsNullOrEmpty(model)) query = query.Where(c => c.Model.Contains(model));
-                if (!string.IsNullOrEmpty(category)) query = query.Where(c => c.Category == category);
-                if (minPrice.HasValue) query = query.Where(c => c.PricePerDay >= minPrice.Value);
-                if (maxPrice.HasValue) query = query.Where(c => c.PricePerDay <= maxPrice.Value);
-                if (locationId.HasValue) query = query.Where(c => c.LocationId == locationId.Value);
-                if (onlyAvailable) query = query.Where(c => c.IsAvailable);
-                return await query.Include(c => c.Location).ToListAsync();
+
+                if (!string.IsNullOrEmpty(make))
+                    query = query.Where(c => c.Make.Contains(make));
+
+                if (!string.IsNullOrEmpty(model))
+                    query = query.Where(c => c.Model.Contains(model));
+
+                if (!string.IsNullOrEmpty(category))
+                    query = query.Where(c => c.Category == category);
+
+                if (minPrice.HasValue)
+                    query = query.Where(c => c.PricePerDay >= minPrice.Value);
+
+                if (maxPrice.HasValue)
+                    query = query.Where(c => c.PricePerDay <= maxPrice.Value);
+
+                if (locationId.HasValue)
+                    query = query.Where(c => c.LocationId == locationId.Value);
+
+                if (onlyAvailable)
+                    query = query.Where(c => c.IsAvailable);
+
+                return await query
+                    .Include(c => c.Location)
+                    .ToListAsync();
             }
-            catch (Exception ex) 
-            { 
-                throw new Exception("Error searching cars", ex); 
+            catch (Exception ex)
+            {
+                throw new Exception("Error searching cars", ex);
             }
         }
 
         public async Task UpdateAsync(Car car)
         {
-            try { 
-                _context.Cars.Update(car); 
-                await _context.SaveChangesAsync(); 
+            try
+            {
+                _context.Cars.Update(car);
+                await _context.SaveChangesAsync();
             }
-            catch (Exception ex) { throw new Exception("Error updating car", ex); }
+            catch (Exception ex)
+            {
+                throw new Exception("Error updating car", ex);
+            }
         }
     }
 }
