@@ -4,6 +4,7 @@ using RyderX_Server.DTO.ReservationDTOs;
 using RyderX_Server.Models;
 using RyderX_Server.Repositories.Interfaces;
 using System.Security.Claims;
+using Microsoft.Extensions.Logging;
 
 namespace RyderX_Server.Controllers
 {
@@ -13,11 +14,16 @@ namespace RyderX_Server.Controllers
     {
         private readonly IReservationRepository _reservationRepository;
         private readonly ICarRepository _carRepository;
+        private readonly ILogger<ReservationsController> _logger;
 
-        public ReservationsController(IReservationRepository reservationRepository, ICarRepository carRepository)
+        public ReservationsController(
+            IReservationRepository reservationRepository,
+            ICarRepository carRepository,
+            ILogger<ReservationsController> logger)
         {
             _reservationRepository = reservationRepository;
             _carRepository = carRepository;
+            _logger = logger;
         }
 
         // GET: api/reservations
@@ -28,6 +34,7 @@ namespace RyderX_Server.Controllers
             try
             {
                 var reservations = await _reservationRepository.GetAllAsync();
+                _logger.LogInformation("Fetched {Count} reservations (Admin/Agent)", reservations.Count());
 
                 var result = reservations.Select(r => new ReservationDto
                 {
@@ -46,6 +53,7 @@ namespace RyderX_Server.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error fetching all reservations");
                 return StatusCode(500, new { Message = "Error fetching reservations", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
@@ -62,6 +70,7 @@ namespace RyderX_Server.Controllers
                     return Unauthorized(new { Message = "Invalid user identity" });
 
                 var reservations = await _reservationRepository.GetByUserIdAsync(userId);
+                _logger.LogInformation("Fetched {Count} reservations for User {UserId}", reservations.Count(), userId);
 
                 var result = reservations.Select(r => new ReservationDto
                 {
@@ -80,12 +89,11 @@ namespace RyderX_Server.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error fetching reservations for current user");
                 return StatusCode(500, new { Message = "Error fetching user reservations", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
 
-        [HttpPost]
-        [Authorize(Roles = "User")]
         // POST: api/reservations
         [HttpPost]
         [Authorize(Roles = "User")]
@@ -126,6 +134,9 @@ namespace RyderX_Server.Controllers
 
                 await _reservationRepository.AddAsync(reservation);
 
+                _logger.LogInformation("Reservation {ReservationId} created for Car {CarId} by User {UserId} (TotalPrice: {TotalPrice}, Days: {Days})",
+                    reservation.Id, car.Id, userId, totalPrice, days);
+
                 return Ok(new
                 {
                     Message = "Reservation created successfully",
@@ -136,10 +147,10 @@ namespace RyderX_Server.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error creating reservation for Car {CarId}", dto.CarId);
                 return StatusCode(500, new { Message = "Error creating reservation", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
-
 
         // PUT: api/reservations/status
         [HttpPut("status")]
@@ -149,10 +160,12 @@ namespace RyderX_Server.Controllers
             try
             {
                 await _reservationRepository.UpdateStatusAsync(dto.ReservationId, dto.Status);
+                _logger.LogInformation("Reservation {ReservationId} status updated to {Status}", dto.ReservationId, dto.Status);
                 return Ok(new { Message = $"Reservation status updated to {dto.Status}" });
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error updating reservation {ReservationId} to {Status}", dto.ReservationId, dto.Status);
                 return StatusCode(500, new { Message = "Error updating reservation status", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
@@ -165,10 +178,12 @@ namespace RyderX_Server.Controllers
             try
             {
                 await _reservationRepository.CancelAsync(id);
+                _logger.LogInformation("Reservation {ReservationId} cancelled", id);
                 return Ok(new { Message = "Reservation cancelled successfully" });
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error cancelling reservation {ReservationId}", id);
                 return StatusCode(500, new { Message = "Error cancelling reservation", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
@@ -183,7 +198,12 @@ namespace RyderX_Server.Controllers
                 var reservations = await _reservationRepository.GetByUserIdForAdminAsync(userId);
 
                 if (!reservations.Any())
+                {
+                    _logger.LogWarning("No reservations found for User {UserId}", userId);
                     return NotFound(new { Message = "No reservations found for this user" });
+                }
+
+                _logger.LogInformation("Fetched {Count} reservations for User {UserId} (Admin/Agent)", reservations.Count(), userId);
 
                 var result = reservations.Select(r => new
                 {
@@ -202,9 +222,9 @@ namespace RyderX_Server.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error fetching reservations for User {UserId} (Admin/Agent)", userId);
                 return StatusCode(500, new { Message = "Error fetching reservations", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
-
     }
 }

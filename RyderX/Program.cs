@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -9,17 +9,23 @@ using RyderX_Server.Repositories.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+
+builder.Logging.ClearProviders();              
+builder.Logging.AddConsole();                  
+builder.Logging.AddDebug();                    
+builder.Logging.AddEventLog();                 
 
 // Configure DB Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("authconnection") ?? throw new InvalidOperationException("Connection string not found.")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("authconnection")
+                         ?? throw new InvalidOperationException("Connection string not found.")));
 
 // Configure Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+// 🔹 Register Repositories
 builder.Services.AddScoped<ICarRepository, CarRepository>();
 builder.Services.AddScoped<ILocationRepository, LocationRepository>();
 builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
@@ -34,7 +40,8 @@ builder.Services.AddAuthentication(options =>
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
+})
+.AddJwtBearer(options =>
 {
     options.SaveToken = true;
     options.RequireHttpsMetadata = false;
@@ -45,10 +52,10 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ValidAudience = builder.Configuration["jwt:ValidAudience"],
         ValidIssuer = builder.Configuration["jwt:ValidIssuer"],
-        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["jwt:Secret"]))
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+            System.Text.Encoding.UTF8.GetBytes(builder.Configuration["jwt:Secret"]))
     };
 });
-
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -66,19 +73,19 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer"
     });
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
                 {
-                    {
-                        new OpenApiSecurityScheme
-                        {
-                            Reference = new OpenApiReference
-                            {
-                                Type=ReferenceType.SecurityScheme,
-                                Id="Bearer"
-                            }
-                        },
-                        new string[]{}
-                    }
-                });
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[]{}
+        }
+    });
 });
 
 // Configure CORS to allow requests from any origin
@@ -91,7 +98,6 @@ builder.Services.AddCors(options =>
                .AllowAnyHeader();
     });
 });
-
 
 var app = builder.Build();
 
@@ -107,7 +113,6 @@ app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
 app.MapControllers();
