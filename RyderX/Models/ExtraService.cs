@@ -8,7 +8,7 @@ namespace RyderX_Server.Models
         public int Id { get; set; }
 
         [Required, MaxLength(50)]
-        public string Name { get; set; } = null!; // GPS, Baby Seat, Insurance
+        public string Name { get; set; } = null!; // Insurance
 
         [Range(0, double.MaxValue)]
         [Column(TypeName = "decimal(18,2)")]

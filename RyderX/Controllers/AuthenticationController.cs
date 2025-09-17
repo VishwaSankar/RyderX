@@ -128,7 +128,7 @@ namespace RyderX_Server.Controllers
             }
         }
 
-        // ✅ Update current user profile
+        // Update current user profile
         [HttpPut("profile")]
         [Authorize(Roles = "User,Admin,Agent")]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserDto dto)
@@ -205,7 +205,7 @@ namespace RyderX_Server.Controllers
             }
         }
 
-        // ✅ Admin: Get user by ID
+        // Admin: Get user by ID
         [HttpGet("user/{id}")]
         [Authorize(Roles = "Admin,Agent")]
         public async Task<IActionResult> GetUserById(string id)
@@ -231,7 +231,7 @@ namespace RyderX_Server.Controllers
             });
         }
 
-        // ✅ Admin: Get user by Email
+        // Admin: Get user by Email
         [HttpGet("user/by-email/{email}")]
         [Authorize(Roles = "Admin,Agent")]
         public async Task<IActionResult> GetUserByEmail(string email)
