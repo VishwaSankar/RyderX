@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Google.Apis.Auth; // ✅ add this for Google token validation
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,12 +16,12 @@ namespace RyderX_Server.Controllers
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
-        private readonly UserManager<ApplicationUser> _userManager; 
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
 
         public AuthenticationController(
-            UserManager<ApplicationUser> userManager,   
+            UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
             IConfiguration configuration)
         {
@@ -29,19 +30,48 @@ namespace RyderX_Server.Controllers
             _configuration = configuration;
         }
 
+        // 🔹 Helper method to generate JWT
+        private async Task<string> GenerateJwtToken(ApplicationUser user)
+        {
+            var userRoles = await _userManager.GetRolesAsync(user);
+
+            var authClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, user.UserName ?? user.Email ?? ""),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id)
+            };
+
+            foreach (var role in userRoles)
+                authClaims.Add(new Claim(ClaimTypes.Role, role));
+
+            var authSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_configuration["jwt:Secret"])
+            );
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["jwt:ValidIssuer"],
+                audience: _configuration["jwt:ValidAudience"],
+                expires: DateTime.UtcNow.AddHours(5),
+                claims: authClaims,
+                signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
         // Register new user
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterModel model)
         {
             try
             {
-                var userExists = await _userManager.FindByEmailAsync(model.Email); 
+                var userExists = await _userManager.FindByEmailAsync(model.Email);
                 if (userExists != null)
                 {
                     return BadRequest(new Response { Status = "Error", Message = "User already exists!" });
                 }
 
-                // Create new user
                 var user = new ApplicationUser
                 {
                     Email = model.Email,
@@ -60,7 +90,6 @@ namespace RyderX_Server.Controllers
                         new Response { Status = "Error", Message = "User creation failed! Please check user details and try again." });
                 }
 
-                // Assign role to user
                 if (!await _roleManager.RoleExistsAsync(model.Role))
                     await _roleManager.CreateAsync(new IdentityRole(model.Role));
 
@@ -84,38 +113,15 @@ namespace RyderX_Server.Controllers
                 var user = await _userManager.FindByEmailAsync(model.Email);
                 if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
                 {
-                    var userRoles = await _userManager.GetRolesAsync(user);
-
-                    var authClaims = new List<Claim>
-                    {
-                        new Claim(ClaimTypes.Name, user.UserName),
-                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                        new Claim(ClaimTypes.NameIdentifier, user.Id) // Helps in profile updates
-                    };
-
-                    foreach (var role in userRoles)
-                    {
-                        authClaims.Add(new Claim(ClaimTypes.Role, role));
-                    }
-
-                    var authSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(_configuration["jwt:Secret"]) 
-                    );
-
-                    var token = new JwtSecurityToken(
-                        issuer: _configuration["jwt:ValidIssuer"],
-                        audience: _configuration["jwt:ValidAudience"],
-                        expires: DateTime.UtcNow.AddHours(5),
-                        claims: authClaims,
-                        signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
-                    );
+                    var token = await GenerateJwtToken(user);
+                    var roles = await _userManager.GetRolesAsync(user);
 
                     return Ok(new
                     {
                         username = user.UserName,
-                        token = new JwtSecurityTokenHandler().WriteToken(token),
-                        expiration = token.ValidTo,
-                        roles = userRoles
+                        token,
+                        expiration = DateTime.UtcNow.AddHours(5),
+                        roles
                     });
                 }
 
@@ -125,6 +131,66 @@ namespace RyderX_Server.Controllers
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new Response { Status = "Error", Message = $"An error occurred: {ex.Message}" });
+            }
+        }
+
+        // ✅ NEW: Login with Google OAuth
+        [HttpPost("external-login")]
+        public async Task<IActionResult> ExternalLogin([FromBody] ExternalAuthModel model)
+        {
+            try
+            {
+                if (model.Provider.ToLower() != "google")
+                    return BadRequest(new { Message = "Only Google OAuth supported right now." });
+
+                // Validate Google ID Token
+                var payload = await GoogleJsonWebSignature.ValidateAsync(
+                    model.IdToken,
+                    new GoogleJsonWebSignature.ValidationSettings()
+                    {
+                        Audience = new[] { _configuration["Authentication:Google:ClientId"] }
+                    });
+
+                var user = await _userManager.FindByEmailAsync(payload.Email);
+
+                if (user == null)
+                {
+                    user = new ApplicationUser
+                    {
+                        UserName = payload.Email,
+                        Email = payload.Email,
+                        FirstName = payload.GivenName,
+                        LastName = payload.FamilyName,
+                        Provider = model.Provider,
+                        ProviderUserId = payload.Subject,
+                        AvatarUrl = payload.Picture,
+                        SecurityStamp = Guid.NewGuid().ToString()
+                    };
+
+                    var result = await _userManager.CreateAsync(user);
+                    if (!result.Succeeded)
+                        return StatusCode(500, new { Message = "Failed to create external user" });
+
+                    if (!await _roleManager.RoleExistsAsync(UserRoles.User))
+                        await _roleManager.CreateAsync(new IdentityRole(UserRoles.User));
+
+                    await _userManager.AddToRoleAsync(user, UserRoles.User);
+                }
+
+                var token = await GenerateJwtToken(user);
+                var roles = await _userManager.GetRolesAsync(user);
+
+                return Ok(new
+                {
+                    username = user.UserName,
+                    token,
+                    expiration = DateTime.UtcNow.AddHours(5),
+                    roles
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "OAuth login failed", Details = ex.Message });
             }
         }
 
@@ -142,7 +208,6 @@ namespace RyderX_Server.Controllers
                 var user = await _userManager.FindByIdAsync(userId);
                 if (user == null) return NotFound(new { Message = "User not found" });
 
-                // Map new DTO fields
                 if (!string.IsNullOrEmpty(dto.FirstName)) user.FirstName = dto.FirstName;
                 if (!string.IsNullOrEmpty(dto.LastName)) user.LastName = dto.LastName;
                 if (!string.IsNullOrEmpty(dto.PhoneNumber)) user.PhoneNumber = dto.PhoneNumber;
@@ -196,7 +261,9 @@ namespace RyderX_Server.Controllers
                     user.City,
                     user.State,
                     user.ZipCode,
-                    user.Country
+                    user.Country,
+                    user.Provider,
+                    user.AvatarUrl
                 });
             }
             catch (Exception ex)
@@ -227,7 +294,9 @@ namespace RyderX_Server.Controllers
                 user.City,
                 user.State,
                 user.ZipCode,
-                user.Country
+                user.Country,
+                user.Provider,
+                user.AvatarUrl
             });
         }
 
@@ -253,10 +322,10 @@ namespace RyderX_Server.Controllers
                 user.City,
                 user.State,
                 user.ZipCode,
-                user.Country
+                user.Country,
+                user.Provider,
+                user.AvatarUrl
             });
         }
-
-
     }
 }

@@ -16,6 +16,11 @@ namespace RyderX_Server.Authentication
         public string? ZipCode { get; set; }
         public string? Country { get; set; }
 
+        public string? Provider { get; set; }       // e.g., Google, GitHub
+        public string? ProviderUserId { get; set; }
+        public string? AvatarUrl { get; set; }      // Optional profile pic URL
+
+
         // Navigation
         public ICollection<Reservation> Reservations { get; set; } = new HashSet<Reservation>();
         public ICollection<Review> Reviews { get; set; } = new HashSet<Review>();
