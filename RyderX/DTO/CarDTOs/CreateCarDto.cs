@@ -23,18 +23,21 @@ namespace RyderX_Server.DTO.CarDTOs
         public int LocationId { get; set; }
 
         [MaxLength(30)]
-        public string? Category { get; set; }   // e.g., Sedan, SUV, Hatchback
+        public string? Category { get; set; }
 
         [MaxLength(20)]
-        public string? FuelType { get; set; }   // e.g., Petrol, Diesel, Electric
+        public string? FuelType { get; set; }
 
         [MaxLength(20)]
-        public string? Transmission { get; set; } // e.g., Manual, Automatic
+        public string? Transmission { get; set; }
 
         [Range(1, 15)]
         public int Seats { get; set; }
 
         [MaxLength(200)]
-        public string? Features { get; set; }   // e.g., GPS, Bluetooth, AC
+        public string? Features { get; set; }
+
+        // ✅ Placeholder for images (future)
+        public string? ImageUrl { get; set; }
     }
 }

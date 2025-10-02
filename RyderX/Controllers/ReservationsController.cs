@@ -226,5 +226,42 @@ namespace RyderX_Server.Controllers
                 return StatusCode(500, new { Message = "Error fetching reservations", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
+
+        // GET: api/reservations/agent/my
+        [HttpGet("agent/my")]
+        [Authorize(Roles = "Agent")]
+        public async Task<IActionResult> GetAgentReservations()
+        {
+            try
+            {
+                var agentId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(agentId))
+                    return Unauthorized(new { Message = "Invalid agent identity" });
+
+                var reservations = await _reservationRepository.GetAllAsync();
+
+                var myReservations = reservations
+                    .Where(r => r.Car != null && r.Car.OwnerId == agentId)
+                    .Select(r => new ReservationDto
+                    {
+                        Id = r.Id,
+                        CarName = r.Car != null ? r.Car.Make + " " + r.Car.Model : "Unknown Car",
+                        UserEmail = r.User?.Email ?? "Unknown",
+                        PickupAt = r.PickupAt,
+                        DropoffAt = r.DropoffAt,
+                        PickupLocation = r.PickupLocation?.Name ?? "N/A",
+                        DropoffLocation = r.DropoffLocation?.Name ?? "N/A",
+                        TotalPrice = r.TotalPrice,
+                        Status = r.Status
+                    });
+
+                return Ok(myReservations);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Error fetching agent reservations", Details = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
     }
 }

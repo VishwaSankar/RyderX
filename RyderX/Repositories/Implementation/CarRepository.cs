@@ -50,6 +50,7 @@ namespace RyderX_Server.Repositories.Implementation
             {
                 return await _context.Cars
                     .Include(c => c.Location)
+                    .Include(c => c.Owner)   
                     .ToListAsync();
             }
             catch (Exception ex)
@@ -63,8 +64,9 @@ namespace RyderX_Server.Repositories.Implementation
             try
             {
                 return await _context.Cars
-                    .Include(c => c.Location)
-                    .FirstOrDefaultAsync(c => c.Id == id);
+                   .Include(c => c.Location)
+                   .Include(c => c.Owner)   
+                   .FirstOrDefaultAsync(c => c.Id == id);
             }
             catch (Exception ex)
             {
@@ -77,7 +79,8 @@ namespace RyderX_Server.Repositories.Implementation
             try
             {
                 return await _context.Cars
-                    .Include(c => c.Location) 
+                    .Include(c => c.Location)
+                    .Include(c => c.Owner)   
                     .Where(c => c.LocationId == locationId)
                     .ToListAsync();
             }

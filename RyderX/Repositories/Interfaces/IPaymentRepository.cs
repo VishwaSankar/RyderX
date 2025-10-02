@@ -9,5 +9,7 @@ namespace RyderX_Server.Repositories.Interfaces
         Task<IEnumerable<Payment>> GetByUserIdAsync(string userId);
         Task<IEnumerable<Payment>> GetByUserIdForAdminAsync(string userId); 
         Task AddAsync(Payment payment);
+        Task<IEnumerable<Payment>> GetByOwnerIdAsync(string ownerId); 
+
     }
 }

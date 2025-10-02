@@ -39,6 +39,8 @@ namespace RyderX_Server.Controllers
                     Transmission = c.Transmission,
                     Seats = c.Seats,
                     Features = c.Features,
+                    OwnerId = c.OwnerId,
+                    OwnerName = c.Owner != null ? $"{c.Owner.FirstName} {c.Owner.LastName}" : "Unknown",
                     LocationName = c.Location?.Name ?? ""
                 });
 
@@ -74,6 +76,8 @@ namespace RyderX_Server.Controllers
                     Transmission = car.Transmission,
                     Seats = car.Seats,
                     Features = car.Features,
+                    OwnerId = car.OwnerId,
+                    OwnerName = car.Owner != null ? $"{car.Owner.FirstName} {car.Owner.LastName}" : "Unknown",
                     LocationName = car.Location?.Name ?? ""
                 };
 
@@ -110,6 +114,8 @@ namespace RyderX_Server.Controllers
                     Transmission = c.Transmission,
                     Seats = c.Seats,
                     Features = c.Features,
+                    OwnerId = c.OwnerId,
+                    OwnerName = c.Owner != null ? $"{c.Owner.FirstName} {c.Owner.LastName}" : "Unknown",
                     LocationName = c.Location?.Name ?? ""
                 });
 
@@ -123,12 +129,15 @@ namespace RyderX_Server.Controllers
 
         // POST: api/cars
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Agent")] // ✅ Both can add
         public async Task<IActionResult> CreateCar([FromBody] CreateCarDto dto)
         {
             try
             {
                 if (!ModelState.IsValid) return BadRequest(ModelState);
+
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId)) return Unauthorized(new { Message = "Invalid user" });
 
                 var car = new Car
                 {
@@ -143,7 +152,9 @@ namespace RyderX_Server.Controllers
                     FuelType = dto.FuelType,
                     Transmission = dto.Transmission,
                     Seats = dto.Seats,
-                    Features = dto.Features
+                    Features = dto.Features,
+                    OwnerId = userId, // ✅ assign logged-in user
+                    ImageUrl = null   // ✅ placeholder for future
                 };
 
                 await _carRepository.AddAsync(car);
@@ -155,15 +166,54 @@ namespace RyderX_Server.Controllers
             }
         }
 
+        // GET: api/cars/mycars
+        [HttpGet("mycars")]
+        [Authorize(Roles = "Agent")]
+        public async Task<IActionResult> GetMyCars()
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized(new { Message = "Invalid user" });
+
+            var cars = await _carRepository.GetAllAsync();
+            var myCars = cars.Where(c => c.OwnerId == userId);
+
+            var result = myCars.Select(c => new CarDto
+            {
+                Id = c.Id,
+                Make = c.Make,
+                Model = c.Model,
+                Year = c.Year,
+                LicensePlate = c.LicensePlate,
+                PricePerDay = c.PricePerDay,
+                IsAvailable = c.IsAvailable,
+                Category = c.Category,
+                FuelType = c.FuelType,
+                Transmission = c.Transmission,
+                Seats = c.Seats,
+                Features = c.Features,
+                OwnerId = c.OwnerId,
+                OwnerName = c.Owner != null ? $"{c.Owner.FirstName} {c.Owner.LastName}" : "Unknown",
+                LocationName = c.Location?.Name ?? ""
+            });
+
+            return Ok(result);
+        }
+
         // PUT: api/cars
         [HttpPut]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Agent")] // ✅ Allow both
         public async Task<IActionResult> UpdateCar([FromBody] UpdateCarDto dto)
         {
             try
             {
                 var car = await _carRepository.GetByIdAsync(dto.Id);
                 if (car == null) return NotFound(new { Message = "Car not found" });
+
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                // ✅ Agents can only update their own cars
+                if (User.IsInRole("Agent") && car.OwnerId != userId)
+                    return Forbid();
 
                 if (!string.IsNullOrEmpty(dto.Make)) car.Make = dto.Make;
                 if (!string.IsNullOrEmpty(dto.Model)) car.Model = dto.Model;
@@ -172,6 +222,8 @@ namespace RyderX_Server.Controllers
                 if (dto.PricePerDay.HasValue) car.PricePerDay = dto.PricePerDay.Value;
                 if (dto.IsAvailable.HasValue) car.IsAvailable = dto.IsAvailable.Value;
                 if (dto.LocationId.HasValue) car.LocationId = dto.LocationId.Value;
+
+                car.UpdatedDate = DateTime.UtcNow;
 
                 await _carRepository.UpdateAsync(car);
                 return Ok(new { Message = "Car updated successfully" });
@@ -184,13 +236,19 @@ namespace RyderX_Server.Controllers
 
         // DELETE: api/cars/5
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Agent")] // ✅ Allow both
         public async Task<IActionResult> DeleteCar(int id)
         {
             try
             {
                 var car = await _carRepository.GetByIdAsync(id);
                 if (car == null) return NotFound(new { Message = "Car not found" });
+
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                // ✅ Agents can only delete their own cars
+                if (User.IsInRole("Agent") && car.OwnerId != userId)
+                    return Forbid();
 
                 await _carRepository.DeleteAsync(id);
                 return Ok(new { Message = "Car deleted successfully" });
@@ -200,6 +258,7 @@ namespace RyderX_Server.Controllers
                 return StatusCode(500, new { Message = $"Error deleting car {id}", Details = ex.Message });
             }
         }
+
         // GET: api/cars/available
         [HttpGet("available")]
         [AllowAnonymous]
@@ -224,6 +283,8 @@ namespace RyderX_Server.Controllers
                     Transmission = c.Transmission,
                     Seats = c.Seats,
                     Features = c.Features,
+                    OwnerId = c.OwnerId,
+                    OwnerName = c.Owner != null ? $"{c.Owner.FirstName} {c.Owner.LastName}" : "Unknown",
                     LocationName = c.Location?.Name ?? ""
                 });
 
@@ -233,7 +294,50 @@ namespace RyderX_Server.Controllers
             {
                 return StatusCode(500, new { Message = "Error fetching available cars", Details = ex.Message });
             }
+
         }
 
+
+        [HttpGet("available/location/{locationName}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAvailableCarsByLocation(string locationName)
+        {
+            try
+            {
+                var cars = await _carRepository.GetAllAsync();
+
+                var availableCars = cars
+                    .Where(c => c.IsAvailable && c.Location != null &&
+                                c.Location.Name.ToLower() == locationName.ToLower());
+
+                if (!availableCars.Any())
+                    return NotFound(new { Message = $"No available cars found at location {locationName}" });
+
+                var result = availableCars.Select(c => new CarDto
+                {
+                    Id = c.Id,
+                    Make = c.Make,
+                    Model = c.Model,
+                    Year = c.Year,
+                    LicensePlate = c.LicensePlate,
+                    PricePerDay = c.PricePerDay,
+                    IsAvailable = c.IsAvailable,
+                    Category = c.Category,
+                    FuelType = c.FuelType,
+                    Transmission = c.Transmission,
+                    Seats = c.Seats,
+                    Features = c.Features,
+                    OwnerId = c.OwnerId,
+                    OwnerName = c.Owner != null ? $"{c.Owner.FirstName} {c.Owner.LastName}" : "Unknown",
+                    LocationName = c.Location?.Name ?? ""
+                });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = $"Error fetching cars for location {locationName}", Details = ex.Message });
+            }
+        }
     }
 }

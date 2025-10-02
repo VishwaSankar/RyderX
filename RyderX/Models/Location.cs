@@ -8,7 +8,7 @@ namespace RyderX_Server.Models
         public int Id { get; set; }
 
         [Required, MaxLength(100)]
-        public string Name { get; set; } = null!;   // E.g. "Chennai Airport Branch"
+        public string Name { get; set; } = null!;   
 
         [Required, MaxLength(100)]
         public string City { get; set; } = null!;

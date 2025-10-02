@@ -1,4 +1,4 @@
-﻿using Google.Apis.Auth; // ✅ add this for Google token validation
+﻿using Google.Apis.Auth; 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -30,7 +30,7 @@ namespace RyderX_Server.Controllers
             _configuration = configuration;
         }
 
-        // 🔹 Helper method to generate JWT
+        // Helper method to generate JWT
         private async Task<string> GenerateJwtToken(ApplicationUser user)
         {
             var userRoles = await _userManager.GetRolesAsync(user);
@@ -134,7 +134,7 @@ namespace RyderX_Server.Controllers
             }
         }
 
-        // ✅ NEW: Login with Google OAuth
+        // Login with Google OAuth
         [HttpPost("external-login")]
         public async Task<IActionResult> ExternalLogin([FromBody] ExternalAuthModel model)
         {

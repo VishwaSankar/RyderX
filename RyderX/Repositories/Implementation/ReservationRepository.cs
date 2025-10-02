@@ -44,7 +44,7 @@ namespace RyderX_Server.Repositories.Implementation
             try
             {
                 var reservation = await _context.Reservations
-                    .Include(r => r.Car)
+                    .Include(r => r.Car).ThenInclude(c => c.Owner)   // ✅ include owner
                     .Include(r => r.PickupLocation)
                     .Include(r => r.DropoffLocation)
                     .FirstOrDefaultAsync(r => r.Id == id);
@@ -95,7 +95,7 @@ namespace RyderX_Server.Repositories.Implementation
             {
                 return await _context.Reservations
                     .Where(r => r.UserId == userId && r.Status == "Booked")
-                    .Include(r => r.Car)
+                    .Include(r => r.Car).ThenInclude(c => c.Owner)   // ✅ include owner
                     .ToListAsync();
             }
             catch (Exception ex)
@@ -109,7 +109,7 @@ namespace RyderX_Server.Repositories.Implementation
             try
             {
                 return await _context.Reservations
-                    .Include(r => r.Car)
+                    .Include(r => r.Car).ThenInclude(c => c.Owner)   // ✅ include owner
                     .Include(r => r.PickupLocation)
                     .Include(r => r.DropoffLocation)
                     .Include(r => r.User)
@@ -127,7 +127,7 @@ namespace RyderX_Server.Repositories.Implementation
             {
                 return await _context.Reservations
                     .Where(r => r.CarId == carId)
-                    .Include(r => r.Car)
+                    .Include(r => r.Car).ThenInclude(c => c.Owner)   // ✅ include owner
                     .ToListAsync();
             }
             catch (Exception ex)
@@ -141,7 +141,7 @@ namespace RyderX_Server.Repositories.Implementation
             try
             {
                 return await _context.Reservations
-                    .Include(r => r.Car)
+                    .Include(r => r.Car).ThenInclude(c => c.Owner)   // ✅ include owner
                     .Include(r => r.User)
                     .Include(r => r.PickupLocation)
                     .Include(r => r.DropoffLocation)
@@ -159,7 +159,7 @@ namespace RyderX_Server.Repositories.Implementation
             {
                 return await _context.Reservations
                     .Where(r => r.UserId == userId)
-                    .Include(r => r.Car)
+                    .Include(r => r.Car).ThenInclude(c => c.Owner)   // ✅ include owner
                     .Include(r => r.User)
                     .Include(r => r.PickupLocation)
                     .Include(r => r.DropoffLocation)
@@ -176,7 +176,7 @@ namespace RyderX_Server.Repositories.Implementation
             try
             {
                 var reservation = await _context.Reservations
-                    .Include(r => r.Car)
+                    .Include(r => r.Car).ThenInclude(c => c.Owner)   // ✅ include owner
                     .Include(r => r.PickupLocation)
                     .Include(r => r.DropoffLocation)
                     .FirstOrDefaultAsync(r => r.Id == id);
@@ -228,7 +228,7 @@ namespace RyderX_Server.Repositories.Implementation
             {
                 return await _context.Reservations
                     .Where(r => r.UserId == userId)
-                    .Include(r => r.Car)
+                    .Include(r => r.Car).ThenInclude(c => c.Owner)   // ✅ include owner
                     .Include(r => r.PickupLocation)
                     .Include(r => r.DropoffLocation)
                     .Include(r => r.User)

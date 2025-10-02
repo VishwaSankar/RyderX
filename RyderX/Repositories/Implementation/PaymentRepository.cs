@@ -18,9 +18,8 @@ namespace RyderX_Server.Repositories.Implementation
         {
             try
             {
-                // ✅ Get reservation with car
                 var reservation = await _context.Reservations
-                    .Include(r => r.Car)
+                    .Include(r => r.Car).ThenInclude(c => c.Owner)   // ✅ include owner
                     .FirstOrDefaultAsync(r => r.Id == payment.ReservationId);
 
                 if (reservation == null) throw new Exception("Reservation not found");
@@ -29,16 +28,15 @@ namespace RyderX_Server.Repositories.Implementation
                 var days = (reservation.DropoffAt.Date - reservation.PickupAt.Date).Days;
                 if (days <= 0) throw new Exception("Invalid reservation dates");
 
-                // ✅ Calculate correct amount
+                // Calculate correct amount
                 var calculatedAmount = days * reservation.Car.PricePerDay;
 
-                // ✅ Overwrite amount (ignore client value)
                 payment.Amount = calculatedAmount;
 
                 await _context.Payments.AddAsync(payment);
 
-                // Mark reservation as booked after payment
-                reservation.Status = "Booked";
+                // Update reservation
+                reservation.Status = "Confirmed";
                 reservation.TotalPrice = calculatedAmount;
                 _context.Reservations.Update(reservation);
 
@@ -50,28 +48,27 @@ namespace RyderX_Server.Repositories.Implementation
             }
         }
 
-        // Other methods unchanged...
         public async Task<Payment?> GetByIdAsync(int id)
         {
             return await _context.Payments
-                .Include(p => p.Reservation)
-                .ThenInclude(r => r.User)
+                .Include(p => p.Reservation).ThenInclude(r => r.Car).ThenInclude(c => c.Owner)   // ✅ include owner
+                .Include(p => p.Reservation).ThenInclude(r => r.User)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
         public async Task<Payment?> GetByReservationIdAsync(int reservationId)
         {
             return await _context.Payments
-                .Include(p => p.Reservation)
-                .ThenInclude(r => r.User)
+                .Include(p => p.Reservation).ThenInclude(r => r.Car).ThenInclude(c => c.Owner)   // ✅ include owner
+                .Include(p => p.Reservation).ThenInclude(r => r.User)
                 .FirstOrDefaultAsync(p => p.ReservationId == reservationId);
         }
 
         public async Task<IEnumerable<Payment>> GetByUserIdAsync(string userId)
         {
             return await _context.Payments
-                .Include(p => p.Reservation)
-                .ThenInclude(r => r.User)
+                .Include(p => p.Reservation).ThenInclude(r => r.Car).ThenInclude(c => c.Owner)   // ✅ include owner
+                .Include(p => p.Reservation).ThenInclude(r => r.User)
                 .Where(p => p.Reservation.UserId == userId)
                 .ToListAsync();
         }
@@ -79,10 +76,19 @@ namespace RyderX_Server.Repositories.Implementation
         public async Task<IEnumerable<Payment>> GetByUserIdForAdminAsync(string userId)
         {
             return await _context.Payments
-                .Include(p => p.Reservation)
-                .ThenInclude(r => r.User)
+                .Include(p => p.Reservation).ThenInclude(r => r.Car).ThenInclude(c => c.Owner)   // ✅ include owner
+                .Include(p => p.Reservation).ThenInclude(r => r.User)
                 .Where(p => p.Reservation.UserId == userId)
                 .ToListAsync();
         }
+        public async Task<IEnumerable<Payment>> GetByOwnerIdAsync(string ownerId)
+        {
+            return await _context.Payments
+                .Include(p => p.Reservation).ThenInclude(r => r.Car).ThenInclude(c => c.Owner)
+                .Include(p => p.Reservation).ThenInclude(r => r.User)
+                .Where(p => p.Reservation.Car != null && p.Reservation.Car.OwnerId == ownerId)
+                .ToListAsync();
+        }
+
     }
 }

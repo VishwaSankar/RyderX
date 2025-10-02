@@ -108,5 +108,44 @@ namespace RyderX_Server.Controllers
                 return StatusCode(500, new { Message = "Error creating booking history", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
+// GET: api/bookinghistories/agent/my
+        [HttpGet("agent/my")]
+        [Authorize(Roles = "Agent")]
+        public async Task<IActionResult> GetAgentBookingHistories()
+        {
+            try
+            {
+                var agentId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(agentId))
+                    return Unauthorized(new { Message = "Invalid agent identity" });
+
+                var histories = await _bookingHistoryRepository.GetAllAsync();
+
+                var myHistories = histories
+                    .Where(h => h.Reservation.Car != null && h.Reservation.Car.OwnerId == agentId)
+                    .Select(h => new BookingHistoryDto
+                    {
+                        Id = h.Id,
+                        UserEmail = h.User?.Email ?? "Unknown",
+                        CarMake = h.CarMake,
+                        CarModel = h.CarModel,
+                        CarLicensePlate = h.CarLicensePlate,
+                        PickupAt = h.PickupAt,
+                        DropoffAt = h.DropoffAt,
+                        PickupLocation = h.PickupLocation,
+                        DropoffLocation = h.DropoffLocation,
+                        TotalPrice = h.TotalPrice,
+                        Status = h.Status,
+                        CreatedAt = h.CreatedAt
+                    });
+
+                return Ok(myHistories);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Error fetching agent booking histories", Details = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
     }
 }

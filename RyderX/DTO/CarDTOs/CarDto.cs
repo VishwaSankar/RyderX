@@ -2,7 +2,6 @@
 {
     public class CarDto
     {
-        //for returning cars
         public int Id { get; set; }
         public string Make { get; set; } = string.Empty;
         public string Model { get; set; } = string.Empty;
@@ -16,5 +15,9 @@
         public int Seats { get; set; }
         public string? Features { get; set; }
         public string LocationName { get; set; } = string.Empty;
+
+        // ✅ NEW: Owner Info
+        public string OwnerId { get; set; } = string.Empty;
+        public string OwnerName { get; set; } = string.Empty; // e.g. "Vishwa S"
     }
 }

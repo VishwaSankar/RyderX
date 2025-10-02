@@ -117,8 +117,8 @@ namespace RyderX_Server.Controllers
                 var payment = new Payment
                 {
                     ReservationId = dto.ReservationId,
-                    PaymentMethod = dto.PaymentMethod,
-                    TransactionId = dto.TransactionId,
+                    PaymentMethod = "Manual", // or Stripe later
+                    TransactionId = Guid.NewGuid().ToString(), // fallback if no gateway
                     PaidAt = DateTime.UtcNow
                 };
 
@@ -129,7 +129,7 @@ namespace RyderX_Server.Controllers
                     Message = "Payment created successfully",
                     PaymentId = payment.Id,
                     ReservationId = payment.ReservationId,
-                    FinalAmount = payment.Amount // ✅ auto-calculated
+                    FinalAmount = payment.Amount
                 });
             }
             catch (Exception ex)
@@ -137,6 +137,7 @@ namespace RyderX_Server.Controllers
                 return StatusCode(500, new { Message = "Error creating payment", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
+
         // GET: api/payments/admin/user/{userId}
         [HttpGet("admin/user/{userId}")]
         [Authorize(Roles = "Admin,Agent")]
@@ -167,6 +168,39 @@ namespace RyderX_Server.Controllers
                 return StatusCode(500, new { Message = "Error fetching payments", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
+
+        // GET: api/payments/agent/my
+        [HttpGet("agent/my")]
+        [Authorize(Roles = "Agent")]
+        public async Task<IActionResult> GetAgentPayments()
+        {
+            try
+            {
+                var agentId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(agentId))
+                    return Unauthorized(new { Message = "Invalid agent identity" });
+
+                var payments = await _paymentRepository.GetByOwnerIdAsync(agentId);
+
+                var result = payments.Select(p => new PaymentDto
+                {
+                    Id = p.Id,
+                    ReservationId = p.ReservationId,
+                    Amount = p.Amount,
+                    PaymentMethod = p.PaymentMethod,
+                    PaidAt = p.PaidAt,
+                    TransactionId = p.TransactionId
+                });
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Error fetching agent payments", Details = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+
 
     }
 }

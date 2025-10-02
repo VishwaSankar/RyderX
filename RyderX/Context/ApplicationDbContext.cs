@@ -77,6 +77,13 @@ namespace RyderX_Server.Context
                  .HasForeignKey(b => b.ReservationId)
                  .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<Car>()
+                 .HasOne(c => c.Owner)
+                 .WithMany()
+                 .HasForeignKey(c => c.OwnerId)
+                 .OnDelete(DeleteBehavior.Restrict); 
+
+
             // BookingHistory → User (1:M)
             builder.Entity<BookingHistory>()
                 .HasOne(b => b.User)

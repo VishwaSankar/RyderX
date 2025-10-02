@@ -24,5 +24,13 @@ namespace RyderX_Server.DTO.CarDTOs
 
         public bool? IsAvailable { get; set; }
         public int? LocationId { get; set; }
+
+        public string? Category { get; set; }
+        public string? FuelType { get; set; }
+        public string? Transmission { get; set; }
+        public int? Features { get; set; }
+
+        // ✅ Optional
+        public string? ImageUrl { get; set; }
     }
 }
