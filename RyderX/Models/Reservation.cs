@@ -47,5 +47,21 @@ namespace RyderX_Server.Models
         public Location? DropoffLocation { get; set; }
 
         public Payment? Payment { get; set; }
+
+        // ✅ Add-ons
+        public bool RoadCare { get; set; } = false;
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal RoadCareFee { get; set; } = 0;
+
+        public bool AdditionalDriver { get; set; } = false;
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal AdditionalDriverFee { get; set; } = 0;
+
+        public bool ChildSeat { get; set; } = false;
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal ChildSeatFee { get; set; } = 0;
     }
 }

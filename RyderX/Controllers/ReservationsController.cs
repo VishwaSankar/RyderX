@@ -114,11 +114,20 @@ namespace RyderX_Server.Controllers
                     return BadRequest(new { Message = "Dropoff date must be after pickup date" });
 
                 var days = (dto.DropoffAt.Date - dto.PickupAt.Date).Days;
+                if (days <= 0) days = 1;
 
                 var car = await _carRepository.GetByIdAsync(dto.CarId);
                 if (car == null) return NotFound(new { Message = "Car not found" });
 
+                // Base price
                 var totalPrice = days * car.PricePerDay;
+
+                // --- Add-ons ---
+                decimal roadCareFee = dto.RoadCare ? 300 : 0;
+                decimal additionalDriverFee = dto.AdditionalDriver ? 200 : 0;
+                decimal childSeatFee = dto.ChildSeat ? 150 : 0;
+
+                totalPrice += roadCareFee + additionalDriverFee + childSeatFee;
 
                 var reservation = new Reservation
                 {
@@ -129,7 +138,14 @@ namespace RyderX_Server.Controllers
                     PickupLocationId = dto.PickupLocationId,
                     DropoffLocationId = dto.DropoffLocationId,
                     TotalPrice = totalPrice,
-                    Status = "Pending"
+                    Status = "Pending",
+
+                    RoadCare = dto.RoadCare,
+                    RoadCareFee = roadCareFee,
+                    AdditionalDriver = dto.AdditionalDriver,
+                    AdditionalDriverFee = additionalDriverFee,
+                    ChildSeat = dto.ChildSeat,
+                    ChildSeatFee = childSeatFee
                 };
 
                 await _reservationRepository.AddAsync(reservation);
@@ -142,7 +158,13 @@ namespace RyderX_Server.Controllers
                     Message = "Reservation created successfully",
                     ReservationId = reservation.Id,
                     TotalPrice = totalPrice,
-                    Days = days
+                    Days = days,
+                    AddOns = new
+                    {
+                        RoadCare = dto.RoadCare ? roadCareFee : 0,
+                        AdditionalDriver = dto.AdditionalDriver ? additionalDriverFee : 0,
+                        ChildSeat = dto.ChildSeat ? childSeatFee : 0
+                    }
                 });
             }
             catch (Exception ex)
@@ -262,6 +284,5 @@ namespace RyderX_Server.Controllers
                 return StatusCode(500, new { Message = "Error fetching agent reservations", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
-
     }
 }

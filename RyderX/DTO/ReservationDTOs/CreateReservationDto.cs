@@ -8,5 +8,9 @@
         public int PickupLocationId { get; set; }
         public int DropoffLocationId { get; set; }
 
+        // --- Add-ons ---
+        public bool RoadCare { get; set; }
+        public bool AdditionalDriver { get; set; }
+        public bool ChildSeat { get; set; }
     }
 }

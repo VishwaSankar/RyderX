@@ -118,7 +118,7 @@ namespace RyderX_Server.Controllers
                 {
                     ReservationId = dto.ReservationId,
                     PaymentMethod = "Manual", // or Stripe later
-                    TransactionId = Guid.NewGuid().ToString(), // fallback if no gateway
+                    TransactionId = Guid.NewGuid().ToString(),
                     PaidAt = DateTime.UtcNow
                 };
 
@@ -199,8 +199,5 @@ namespace RyderX_Server.Controllers
                 return StatusCode(500, new { Message = "Error fetching agent payments", Details = ex.InnerException?.Message ?? ex.Message });
             }
         }
-
-
-
     }
 }
