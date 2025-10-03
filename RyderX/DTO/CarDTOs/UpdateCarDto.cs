@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace RyderX_Server.DTO.CarDTOs
 {
@@ -23,14 +24,24 @@ namespace RyderX_Server.DTO.CarDTOs
         public decimal? PricePerDay { get; set; }
 
         public bool? IsAvailable { get; set; }
+
         public int? LocationId { get; set; }
 
+        [MaxLength(30)]
         public string? Category { get; set; }
-        public string? FuelType { get; set; }
-        public string? Transmission { get; set; }
-        public int? Features { get; set; }
 
-        // ✅ Optional
-        public string? ImageUrl { get; set; }
+        [MaxLength(20)]
+        public string? FuelType { get; set; }
+
+        [MaxLength(20)]
+        public string? Transmission { get; set; }
+
+        [Range(1, 15)]
+        public int? Seats { get; set; }
+
+        public string? Features { get; set; }
+
+        // ✅ Image comes in multipart form like CreateCar
+        public IFormFile? ImageFile { get; set; }
     }
 }

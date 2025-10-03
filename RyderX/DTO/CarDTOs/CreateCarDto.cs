@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace RyderX_Server.DTO.CarDTOs
 {
@@ -37,7 +38,7 @@ namespace RyderX_Server.DTO.CarDTOs
         [MaxLength(200)]
         public string? Features { get; set; }
 
-        // ✅ Placeholder for images (future)
-        public string? ImageUrl { get; set; }
+        // ✅ Image comes in multipart form
+        public IFormFile? ImageFile { get; set; }
     }
 }

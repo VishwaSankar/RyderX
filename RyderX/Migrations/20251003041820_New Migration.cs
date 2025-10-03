@@ -6,11 +6,29 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace RyderX_Server.Migrations
 {
     /// <inheritdoc />
-    public partial class AddedTables : Migration
+    public partial class NewMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "Announcements",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    Audience = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ExpiryDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Announcements", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
@@ -40,6 +58,9 @@ namespace RyderX_Server.Migrations
                     State = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ZipCode = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Country = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Provider = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ProviderUserId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    AvatarUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -58,21 +79,6 @@ namespace RyderX_Server.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetUsers", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ExtraServices",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ExtraServices", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -214,20 +220,22 @@ namespace RyderX_Server.Migrations
                     FuelType = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     Transmission = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
                     Seats = table.Column<int>(type: "int", nullable: false),
-                    Mileage = table.Column<double>(type: "float", nullable: true),
-                    EngineType = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    InsuranceIncluded = table.Column<bool>(type: "bit", nullable: false),
-                    FuelPolicy = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     Features = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PhotoUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ConditionDescription = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    OwnerId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     LocationId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Cars", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Cars_AspNetUsers_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Cars_Locations_LocationId",
                         column: x => x.LocationId,
@@ -423,6 +431,11 @@ namespace RyderX_Server.Migrations
                 column: "LocationId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Cars_OwnerId",
+                table: "Cars",
+                column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Payments_ReservationId",
                 table: "Payments",
                 column: "ReservationId",
@@ -463,6 +476,9 @@ namespace RyderX_Server.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "Announcements");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
             migrationBuilder.DropTable(
@@ -481,9 +497,6 @@ namespace RyderX_Server.Migrations
                 name: "BookingHistories");
 
             migrationBuilder.DropTable(
-                name: "ExtraServices");
-
-            migrationBuilder.DropTable(
                 name: "Payments");
 
             migrationBuilder.DropTable(
@@ -496,10 +509,10 @@ namespace RyderX_Server.Migrations
                 name: "Reservations");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "Cars");
 
             migrationBuilder.DropTable(
-                name: "Cars");
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "Locations");

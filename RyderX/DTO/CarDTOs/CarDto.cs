@@ -16,8 +16,11 @@
         public string? Features { get; set; }
         public string LocationName { get; set; } = string.Empty;
 
-        // ✅ NEW: Owner Info
+        // ✅ Owner Info
         public string OwnerId { get; set; } = string.Empty;
         public string OwnerName { get; set; } = string.Empty; // e.g. "Vishwa S"
+
+        // ✅ New: Car Image
+        public string? ImageUrl { get; set; }
     }
 }

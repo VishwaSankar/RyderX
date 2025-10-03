@@ -12,8 +12,8 @@ using RyderX_Server.Context;
 namespace RyderX_Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250917050518_Updeted car")]
-    partial class Updetedcar
+    [Migration("20251003041820_New Migration")]
+    partial class NewMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -166,6 +166,9 @@ namespace RyderX_Server.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("AvatarUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("City")
                         .HasColumnType("nvarchar(max)");
 
@@ -220,6 +223,12 @@ namespace RyderX_Server.Migrations
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<string>("Provider")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProviderUserId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("nvarchar(max)");
@@ -377,6 +386,9 @@ namespace RyderX_Server.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("bit");
 
@@ -398,6 +410,9 @@ namespace RyderX_Server.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("OwnerId")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<decimal>("PricePerDay")
                         .HasColumnType("decimal(18,2)");
 
@@ -418,31 +433,9 @@ namespace RyderX_Server.Migrations
 
                     b.HasIndex("LocationId");
 
+                    b.HasIndex("OwnerId");
+
                     b.ToTable("Cars");
-                });
-
-            modelBuilder.Entity("RyderX_Server.Models.ExtraService", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ExtraServices");
                 });
 
             modelBuilder.Entity("RyderX_Server.Models.Location", b =>
@@ -674,7 +667,14 @@ namespace RyderX_Server.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("RyderX_Server.Authentication.ApplicationUser", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Location");
+
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("RyderX_Server.Models.Payment", b =>
